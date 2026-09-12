@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="780" viewBox="0 0 1080 780" font-family="Microsoft YaHei, PingFang SC, sans-serif">
+  <title>任务树导图：连锁分析FBD化（演示）</title>
+  <rect x="0" y="0" width="1080" height="780" fill="#ffffff"/>
+  <text x="20" y="26" font-size="12" fill="#888">任务树导图 · 随 任务树.md 同步更新（每次树落盘时整体重写本文件） · 叶节点左侧色块=状态</text>
+
+  <!-- ═══════════ 连线：根 → L1 ═══════════ -->
+  <g stroke="#c8c8c8" stroke-width="1.5" fill="none">
+    <path d="M240,368 C285,368 275,108 320,108"/>
+    <path d="M240,368 C285,368 275,208 320,208"/>
+    <path d="M240,368 C285,368 275,368 320,368"/>
+    <path d="M240,368 C285,368 275,512 320,512"/>
+    <path d="M240,368 C285,368 275,628 320,628"/>
+  </g>
+
+  <!-- ═══════════ 连线：L1 → 叶 ═══════════ -->
+  <g stroke="#d5d5d5" stroke-width="1.2" fill="none">
+    <!-- L1-1 → 3叶 -->
+    <path d="M520,108 C565,108 575,64 620,64"/>
+    <path d="M520,108 C565,108 575,108 620,108"/>
+    <path d="M520,108 C565,108 575,152 620,152"/>
+    <!-- L1-2 → 1叶 -->
+    <path d="M520,208 C565,208 575,208 620,208"/>
+    <!-- L1-3 → 5叶 -->
+    <path d="M520,368 C565,368 575,280 620,280"/>
+    <path d="M520,368 C565,368 575,324 620,324"/>
+    <path d="M520,368 C565,368 575,368 620,368"/>
+    <path d="M520,368 C565,368 575,412 620,412"/>
+    <path d="M520,368 C565,368 575,456 620,456"/>
+    <!-- L1-4 → 1叶 -->
+    <path d="M520,512 C565,512 575,512 620,512"/>
+    <!-- L1-5 → 3叶 -->
+    <path d="M520,628 C565,628 575,584 620,584"/>
+    <path d="M520,628 C565,628 575,628 620,628"/>
+    <path d="M520,628 C565,628 575,672 620,672"/>
+  </g>
+
+  <!-- ═══════════ 根节点 ═══════════ -->
+  <rect x="20" y="340" width="220" height="56" rx="10" fill="#1a73e8"/>
+  <text x="130" y="365" fill="#ffffff" text-anchor="middle" font-size="17" font-weight="bold">连锁分析FBD化</text>
+  <text x="130" y="386" fill="#cfe0ff" text-anchor="middle" font-size="12">进度 0/13 · 演示树</text>
+
+  <!-- ═══════════ L1 分支节点 ═══════════ -->
+  <g>
+    <rect x="320" y="88" width="200" height="40" rx="8" fill="#e8f0fe"/>
+    <text x="420" y="113" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-1 基准确认</text>
+    <rect x="320" y="188" width="200" height="40" rx="8" fill="#e8f0fe"/>
+    <text x="420" y="213" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-2 页码索引</text>
+    <rect x="320" y="348" width="200" height="40" rx="8" fill="#e8f0fe"/>
+    <text x="420" y="373" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-3 逐组处理</text>
+    <rect x="320" y="492" width="200" height="40" rx="8" fill="#e8f0fe"/>
+    <text x="420" y="517" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-4 master去重</text>
+    <rect x="320" y="608" width="200" height="40" rx="8" fill="#e8f0fe"/>
+    <text x="420" y="633" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-5 复查</text>
+  </g>
+
+  <!-- ═══════════ L2 叶节点（状态色块 + 文本框） ═══════════ -->
+  <!-- L1-1 的 3 叶 -->
+  <g>
+    <rect x="620" y="57" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="48" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="69" fill="#333333" font-size="14">登记唯一基准PDF及版本</text>
+
+    <rect x="620" y="101" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="92" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="113" fill="#333333" font-size="14">锁定最新版IO点号表</text>
+
+    <rect x="620" y="145" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="136" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="157" fill="#333333" font-size="14">登记参考PDF清单</text>
+  </g>
+
+  <!-- L1-2 的 1 叶 -->
+  <g>
+    <rect x="620" y="201" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="192" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="213" fill="#333333" font-size="14">建立页码索引表（连锁/启停/仪表）</text>
+  </g>
+
+  <!-- L1-3 的 5 叶（示例组） -->
+  <g>
+    <rect x="620" y="273" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="264" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="285" fill="#333333" font-size="14">提取该组VP图连锁条件</text>
+
+    <rect x="620" y="317" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="308" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="329" fill="#333333" font-size="14">信号名→VAR变量名映射核对</text>
+
+    <rect x="620" y="361" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="352" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="373" fill="#333333" font-size="14">生成该组VAR/FUN表</text>
+
+    <rect x="620" y="405" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="396" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="417" fill="#333333" font-size="14">生成该组FBD管脚连接说明</text>
+
+    <rect x="620" y="449" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="440" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="461" fill="#333333" font-size="14">登记设定值确认表</text>
+
+    <text x="652" y="490" font-size="12" font-style="italic" fill="#999">……其余组复制此叶模式（实战时按 G10/G20/G30… 全部展开）</text>
+  </g>
+
+  <!-- L1-4 的 1 叶 -->
+  <g>
+    <rect x="620" y="505" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="496" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="517" fill="#333333" font-size="14">比对master表，输出差异清单</text>
+  </g>
+
+  <!-- L1-5 的 3 叶 -->
+  <g>
+    <rect x="620" y="577" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="568" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="589" fill="#333333" font-size="14">逐页回读核对（PDF页 vs 产物）</text>
+
+    <rect x="620" y="621" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="612" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="633" fill="#333333" font-size="14">跨组一致性检查</text>
+
+    <rect x="620" y="665" width="14" height="14" fill="#9E9E9E"/>
+    <rect x="640" y="656" width="400" height="32" rx="6" fill="#f5f5f5"/>
+    <text x="652" y="677" fill="#333333" font-size="14">按用户分组输出FBD管脚连接说明</text>
+  </g>
+
+  <!-- ═══════════ 图例 ═══════════ -->
+  <g font-size="13" fill="#555555">
+    <rect x="320" y="724" width="16" height="16" fill="#9E9E9E"/>
+    <text x="344" y="737">未开始</text>
+    <rect x="430" y="724" width="16" height="16" fill="#F5A623"/>
+    <text x="454" y="737">进行中</text>
+    <rect x="540" y="724" width="16" height="16" fill="#34A853"/>
+    <text x="564" y="737">完成已核对</text>
+    <rect x="680" y="724" width="16" height="16" fill="#EA4335"/>
+    <text x="704" y="737">有问题待复查</text>
+  </g>
+</svg>
