@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Microsoft YaHei, sans-serif">
+  <rect x="20" y="200" width="230" height="60" rx="10" fill="#1a73e8"/>
+  <text x="135" y="226" fill="#fff" text-anchor="middle" font-size="16" font-weight="bold">编排器-工作者模式调研</text>
+  <text x="135" y="248" fill="#fff" text-anchor="middle" font-size="12">进度 7/7</text>
+  <path d="M250,230 C290,230 290,100 330,100" stroke="#bbb" fill="none"/>
+  <path d="M250,230 C290,230 290,290 330,290" stroke="#bbb" fill="none"/>
+  <path d="M250,230 C290,230 290,390 330,390" stroke="#bbb" fill="none"/>
+  <rect x="330" y="80" width="190" height="40" rx="8" fill="#e8f0fe"/>
+  <text x="425" y="105" fill="#174ea6" text-anchor="middle" font-size="14" font-weight="bold">L1-1 Anthropic博客</text>
+  <rect x="330" y="270" width="190" height="40" rx="8" fill="#e8f0fe"/>
+  <text x="425" y="295" fill="#174ea6" text-anchor="middle" font-size="14" font-weight="bold">L1-2 来源2/3/4</text>
+  <rect x="330" y="370" width="190" height="40" rx="8" fill="#e8f0fe"/>
+  <text x="425" y="395" fill="#174ea6" text-anchor="middle" font-size="14" font-weight="bold">L1-3 综合输出</text>
+  <rect x="580" y="30" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="26" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="43" fill="#333" font-size="13">L1-1.1 multi-agent research system 抓取+核对</text>
+  <rect x="580" y="62" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="58" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="75" fill="#333" font-size="13">L1-1.2 building effective agents 抓取</text>
+  <rect x="580" y="94" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="90" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="107" fill="#333" font-size="13">L1-1.x 六维度笔记（交叉验证）</text>
+  <rect x="580" y="240" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="236" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="253" fill="#333" font-size="13">L1-2.1 openai/swarm 简查</text>
+  <rect x="580" y="272" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="268" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="285" fill="#333" font-size="13">L1-2.2 BMAD-METHOD 中查</text>
+  <rect x="580" y="304" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="300" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="317" fill="#333" font-size="13">L1-2.3 OpenHands 简查</text>
+  <rect x="580" y="380" width="14" height="14" fill="#34A853"/>
+  <rect x="600" y="376" width="330" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="612" y="393" fill="#333" font-size="13">L1-3.1 合成最终报告（≤2500字）</text>
+  <rect x="20" y="430" width="14" height="14" fill="#34A853"/>
+  <text x="42" y="443" fill="#333" font-size="12">✅完成</text>
+  <rect x="110" y="430" width="14" height="14" fill="#9E9E9E"/>
+  <text x="132" y="443" fill="#333" font-size="12">未开始</text>
+  <rect x="200" y="430" width="14" height="14" fill="#EA4335"/>
+  <text x="222" y="443" fill="#333" font-size="12">待复查</text>
+</svg>
