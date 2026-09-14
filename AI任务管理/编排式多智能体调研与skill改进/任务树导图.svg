@@ -8,7 +8,7 @@
   <!-- 根节点 -->
   <rect x="20" y="300" width="220" height="56" rx="10" fill="#1a73e8"/>
   <text x="130" y="322" fill="#fff" text-anchor="middle" font-size="15" font-weight="bold">编排式多智能体调研</text>
-  <text x="130" y="344" fill="#fff" text-anchor="middle" font-size="12">与skill改进｜进度 3/13</text>
+  <text x="130" y="344" fill="#fff" text-anchor="middle" font-size="12">与skill改进｜进度 13/13</text>
 
   <!-- 连线：根 → L1 -->
   <path d="M240,328 C280,328 280,84 320,84" stroke="#bbb" fill="none"/>
@@ -37,55 +37,55 @@
   <path d="M520,224 C560,224 560,224 600,224" stroke="#bbb" fill="none"/>
   <path d="M520,224 C560,224 560,264 600,264" stroke="#bbb" fill="none"/>
   <path d="M520,224 C560,224 560,304 600,304" stroke="#bbb" fill="none"/>
-  <rect x="600" y="137" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="600" y="137" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="128" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="149" fill="#333" font-size="14">L1-2.1 LangGraph 调研</text>
+  <text x="632" y="149" fill="#333" font-size="14">L1-2.1 LangGraph 调研 ✅</text>
   <rect x="600" y="177" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="168" width="380" height="32" rx="6" fill="#f5f5f5"/>
   <text x="632" y="189" fill="#333" font-size="14">L1-2.2 AutoGen/Magentic-One 调研 ✅</text>
-  <rect x="600" y="217" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="600" y="217" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="208" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="229" fill="#333" font-size="14">L1-2.3 CrewAI 层级模式调研</text>
-  <rect x="600" y="257" width="14" height="14" fill="#9E9E9E"/>
+  <text x="632" y="229" fill="#333" font-size="14">L1-2.3 CrewAI 层级模式调研 ✅</text>
+  <rect x="600" y="257" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="248" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="269" fill="#333" font-size="14">L1-2.4 claude-flow 调研</text>
-  <rect x="600" y="297" width="14" height="14" fill="#9E9E9E"/>
+  <text x="632" y="269" fill="#333" font-size="14">L1-2.4 claude-flow 调研 ✅</text>
+  <rect x="600" y="297" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="288" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="309" fill="#333" font-size="14">L1-2.5 其他编排模式调研</text>
+  <text x="632" y="309" fill="#333" font-size="14">L1-2.5 其他编排模式调研 ✅</text>
 
   <!-- L1-3 -->
   <rect x="320" y="344" width="200" height="40" rx="8" fill="#e8f0fe"/>
   <text x="420" y="369" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-3 提炼与差距分析</text>
   <path d="M520,364 C560,364 560,344 600,344" stroke="#bbb" fill="none"/>
   <path d="M520,364 C560,364 560,384 600,384" stroke="#bbb" fill="none"/>
-  <rect x="600" y="337" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="600" y="337" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="328" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="349" fill="#333" font-size="14">L1-3.1 汇总提炼可借鉴模式</text>
-  <rect x="600" y="377" width="14" height="14" fill="#9E9E9E"/>
+  <text x="632" y="349" fill="#333" font-size="14">L1-3.1 汇总提炼可借鉴模式 ✅</text>
+  <rect x="600" y="377" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="368" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="389" fill="#333" font-size="14">L1-3.2 逐节对比定差距</text>
+  <text x="632" y="389" fill="#333" font-size="14">L1-3.2 逐节对比定差距 ✅</text>
 
   <!-- L1-4 -->
   <rect x="320" y="424" width="200" height="40" rx="8" fill="#e8f0fe"/>
   <text x="420" y="449" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-4 skill改进实施</text>
   <path d="M520,444 C560,444 560,424 600,424" stroke="#bbb" fill="none"/>
   <path d="M520,444 C560,444 560,464 600,464" stroke="#bbb" fill="none"/>
-  <rect x="600" y="417" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="600" y="417" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="408" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="429" fill="#333" font-size="14">L1-4.1 改写 SKILL.md（repo 版）</text>
-  <rect x="600" y="457" width="14" height="14" fill="#9E9E9E"/>
+  <text x="632" y="429" fill="#333" font-size="14">L1-4.1 改写 SKILL.md（repo 版）✅</text>
+  <rect x="600" y="457" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="448" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="469" fill="#333" font-size="14">L1-4.2 同步已安装副本核对</text>
+  <text x="632" y="469" fill="#333" font-size="14">L1-4.2 同步已安装副本核对 ✅</text>
 
   <!-- L1-5 -->
   <rect x="320" y="504" width="200" height="40" rx="8" fill="#e8f0fe"/>
   <text x="420" y="529" fill="#174ea6" text-anchor="middle" font-size="15" font-weight="bold">L1-5 收尾</text>
   <path d="M520,524 C560,524 560,504 600,504" stroke="#bbb" fill="none"/>
   <path d="M520,524 C560,524 560,544 600,544" stroke="#bbb" fill="none"/>
-  <rect x="600" y="497" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="600" y="497" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="488" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="509" fill="#333" font-size="14">L1-5.1 调研报告经验入库</text>
-  <rect x="600" y="537" width="14" height="14" fill="#9E9E9E"/>
+  <text x="632" y="509" fill="#333" font-size="14">L1-5.1 调研报告经验入库 ✅</text>
+  <rect x="600" y="537" width="14" height="14" fill="#34A853"/>
   <rect x="620" y="528" width="380" height="32" rx="6" fill="#f5f5f5"/>
-  <text x="632" y="549" fill="#333" font-size="14">L1-5.2 任务树收尾+git 提交</text>
+  <text x="632" y="549" fill="#333" font-size="14">L1-5.2 任务树收尾+git 提交 ✅</text>
 </svg>
