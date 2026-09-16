@@ -2,7 +2,7 @@
   <!-- 根节点 -->
   <rect x="20" y="160" width="240" height="60" rx="10" fill="#1a73e8"/>
   <text x="140" y="185" fill="#fff" text-anchor="middle" font-size="16" font-weight="bold">系统提示词技巧落地</text>
-  <text x="140" y="207" fill="#fff" text-anchor="middle" font-size="12">12 条映射实施 + 合并 master | 进度 3/5</text>
+  <text x="140" y="207" fill="#fff" text-anchor="middle" font-size="12">12 条映射实施 + 合并 master | 进度 5/5 ✅</text>
 
   <!-- 连线 -->
   <path d="M260,190 C310,190 310,80 360,80" stroke="#bbb" fill="none"/>
@@ -37,11 +37,11 @@
   <path d="M580,290 C620,290 620,260 660,260" stroke="#ccc" fill="none"/>
   <path d="M580,290 C620,290 620,320 660,320" stroke="#ccc" fill="none"/>
 
-  <rect x="660" y="253" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="660" y="253" width="14" height="14" fill="#34A853"/>
   <rect x="680" y="249" width="400" height="24" rx="6" fill="#f5f5f5"/>
   <text x="692" y="266" fill="#333" font-size="13">L1-2.1 提交推送 trae 分支</text>
 
-  <rect x="660" y="313" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="660" y="313" width="14" height="14" fill="#34A853"/>
   <rect x="680" y="309" width="400" height="24" rx="6" fill="#f5f5f5"/>
   <text x="692" y="326" fill="#333" font-size="13">L1-2.2 合并 master 并推送</text>
 
