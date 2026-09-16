@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" font-family="Microsoft YaHei, sans-serif" width="1180" height="400">
+  <!-- 根节点 -->
+  <rect x="20" y="160" width="240" height="60" rx="10" fill="#1a73e8"/>
+  <text x="140" y="185" fill="#fff" text-anchor="middle" font-size="16" font-weight="bold">系统提示词技巧落地</text>
+  <text x="140" y="207" fill="#fff" text-anchor="middle" font-size="12">12 条映射实施 + 合并 master | 进度 3/5</text>
+
+  <!-- 连线 -->
+  <path d="M260,190 C310,190 310,80 360,80" stroke="#bbb" fill="none"/>
+  <path d="M260,190 C310,190 310,290 360,290" stroke="#bbb" fill="none"/>
+
+  <!-- L1-1 修改三份源文件 -->
+  <rect x="360" y="56" width="220" height="48" rx="8" fill="#e8f0fe"/>
+  <text x="470" y="78" fill="#174ea6" text-anchor="middle" font-size="14" font-weight="bold">L1-1 修改三份源文件</text>
+  <text x="470" y="96" fill="#5f6368" text-anchor="middle" font-size="11">12 条映射全部落地</text>
+
+  <path d="M580,80 C620,80 620,40 660,40" stroke="#ccc" fill="none"/>
+  <path d="M580,80 C620,80 620,90 660,90" stroke="#ccc" fill="none"/>
+  <path d="M580,80 C620,80 620,140 660,140" stroke="#ccc" fill="none"/>
+
+  <rect x="660" y="33" width="14" height="14" fill="#34A853"/>
+  <rect x="680" y="29" width="400" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="692" y="46" fill="#333" font-size="13">L1-1.1 用户规则落地 R-1~R-5</text>
+
+  <rect x="660" y="83" width="14" height="14" fill="#34A853"/>
+  <rect x="680" y="79" width="400" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="692" y="96" fill="#333" font-size="13">L1-1.2 任务树 skill 落地 S-1~S-3（+部署副本同步）</text>
+
+  <rect x="660" y="133" width="14" height="14" fill="#34A853"/>
+  <rect x="680" y="129" width="400" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="692" y="146" fill="#333" font-size="13">L1-1.3 连锁分析 skill 落地 I-1~I-4（+部署副本同步）</text>
+
+  <!-- L1-2 提交与合并 -->
+  <rect x="360" y="266" width="220" height="48" rx="8" fill="#e8f0fe"/>
+  <text x="470" y="288" fill="#174ea6" text-anchor="middle" font-size="14" font-weight="bold">L1-2 提交与合并</text>
+  <text x="470" y="306" fill="#5f6368" text-anchor="middle" font-size="11">变更上远端 master</text>
+
+  <path d="M580,290 C620,290 620,260 660,260" stroke="#ccc" fill="none"/>
+  <path d="M580,290 C620,290 620,320 660,320" stroke="#ccc" fill="none"/>
+
+  <rect x="660" y="253" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="680" y="249" width="400" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="692" y="266" fill="#333" font-size="13">L1-2.1 提交推送 trae 分支</text>
+
+  <rect x="660" y="313" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="680" y="309" width="400" height="24" rx="6" fill="#f5f5f5"/>
+  <text x="692" y="326" fill="#333" font-size="13">L1-2.2 合并 master 并推送</text>
+
+  <!-- 图例 -->
+  <rect x="20" y="360" width="14" height="14" fill="#9E9E9E"/>
+  <text x="40" y="372" fill="#5f6368" font-size="12">未开始</text>
+  <rect x="110" y="360" width="14" height="14" fill="#F5A623"/>
+  <text x="130" y="372" fill="#5f6368" font-size="12">进行中</text>
+  <rect x="200" y="360" width="14" height="14" fill="#34A853"/>
+  <text x="220" y="372" fill="#5f6368" font-size="12">完成已核对</text>
+  <rect x="300" y="360" width="14" height="14" fill="#EA4335"/>
+  <text x="320" y="372" fill="#5f6368" font-size="12">有问题待复查</text>
+</svg>
