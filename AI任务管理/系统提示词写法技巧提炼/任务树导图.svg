@@ -2,7 +2,7 @@
   <!-- 根节点 -->
   <rect x="20" y="230" width="230" height="60" rx="10" fill="#1a73e8"/>
   <text x="135" y="255" fill="#fff" text-anchor="middle" font-size="16" font-weight="bold">系统提示词写法技巧提炼</text>
-  <text x="135" y="277" fill="#fff" text-anchor="middle" font-size="12">system_prompts_leaks 调研 | 进度 0/8</text>
+  <text x="135" y="277" fill="#fff" text-anchor="middle" font-size="12">system_prompts_leaks 调研 | 进度 7/8</text>
 
   <!-- 连线: 根 → L1 -->
   <path d="M250,260 C300,260 300,90 350,90" stroke="#bbb" fill="none"/>
@@ -19,15 +19,15 @@
   <path d="M540,90 C580,90 580,90 620,90" stroke="#ccc" fill="none"/>
   <path d="M540,90 C580,90 580,140 620,140" stroke="#ccc" fill="none"/>
 
-  <rect x="620" y="33" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="33" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="29" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="46" fill="#333" font-size="13">L1-1.1 克隆仓库到本地</text>
 
-  <rect x="620" y="83" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="83" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="79" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="96" fill="#333" font-size="13">L1-1.2 助手类 prompt 取样笔记（6 篇）</text>
 
-  <rect x="620" y="133" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="133" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="129" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="146" fill="#333" font-size="13">L1-1.3 编程 Agent 类取样笔记（5 篇）</text>
 
@@ -38,7 +38,7 @@
 
   <path d="M540,205 C580,205 580,205 620,205" stroke="#ccc" fill="none"/>
 
-  <rect x="620" y="198" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="198" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="194" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="211" fill="#333" font-size="13">L1-2.1 四维度共性提炼（结构/边界/工具/格式）</text>
 
@@ -50,11 +50,11 @@
   <path d="M540,320 C580,320 580,290 620,290" stroke="#ccc" fill="none"/>
   <path d="M540,320 C580,320 580,340 620,340" stroke="#ccc" fill="none"/>
 
-  <rect x="620" y="283" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="283" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="279" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="296" fill="#333" font-size="13">L1-3.1 写《Prompt 写法技巧清单》</text>
 
-  <rect x="620" y="333" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="333" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="329" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="346" fill="#333" font-size="13">L1-3.2 对照 TRAE 规则/skill 提改进映射</text>
 
@@ -66,11 +66,11 @@
   <path d="M540,435 C580,435 580,415 620,415" stroke="#ccc" fill="none"/>
   <path d="M540,435 C580,435 580,455 620,455" stroke="#ccc" fill="none"/>
 
-  <rect x="620" y="408" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="408" width="14" height="14" fill="#34A853"/>
   <rect x="640" y="404" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="421" fill="#333" font-size="13">L1-4.1 清单入库并更新 INDEX</text>
 
-  <rect x="620" y="458" width="14" height="14" fill="#9E9E9E"/>
+  <rect x="620" y="458" width="14" height="14" fill="#F5A623"/>
   <rect x="640" y="454" width="420" height="24" rx="6" fill="#f5f5f5"/>
   <text x="652" y="471" fill="#333" font-size="13">L1-4.2 git 提交推送</text>
 
