@@ -309,3 +309,67 @@ def dedupe_increment(new_items: List[Any], existing_items: List[Any]) -> Tuple[L
             seen.add(key)
             added.append(item)
     return added, dup
+
+
+class AB800xAAdapter:
+    """800xA 适配器类接口（T5 基类约定，包装 T4 模块函数）。
+
+    提供与 PCS7/Freelance 桩一致的类方法形态，内部委托模块级函数实现：
+    - generate_point_table → generate_var_excel
+    - generate_logic       → generate_fun_excel
+    - parse_export         → parse_800xa_export
+    - dedupe               → dedupe_increment
+    """
+
+    platform = "ab800xa"
+
+    def __init__(self, output_dir: str = "") -> None:
+        self.output_dir = output_dir
+
+    @staticmethod
+    def pending_items() -> List[Dict[str, str]]:
+        return [
+            {
+                "item": "800xA 虚拟控制器 OPC UA 强制功能",
+                "status": "待核实",
+                "question": "真实虚拟控制器接入细节见 dcsaf/tools/simulator.py 调研登记。",
+            },
+            {
+                "item": "BDM 批量导入列定义",
+                "status": "待核实",
+                "question": "knowledge 中未找到 BDM 官方列依据，模板 export_format 已注明待补充。",
+            },
+        ]
+
+    def generate_point_table(self, ir: PointTable) -> str:
+        """由 IR 点位表生成 800xA VAR 表 xlsx，返回文件路径。"""
+        if self.output_dir:
+            from pathlib import Path as _Path
+            _Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+            out = str(_Path(self.output_dir) / f"{ir.name or 'point'}_Var.xlsx")
+        else:
+            out = f"{ir.name or 'point'}_Var.xlsx"
+        return generate_var_excel(ir, out)
+
+    def generate_logic(self, ir: LogicProgram) -> str:
+        """由 IR 逻辑生成 800xA FUN 表 xlsx，返回文件路径。"""
+        if self.output_dir:
+            from pathlib import Path as _Path
+            _Path(self.output_dir).mkdir(parents=True, exist_ok=True)
+            out = str(_Path(self.output_dir) / f"{ir.name or 'logic'}_Fun.xlsx")
+        else:
+            out = f"{ir.name or 'logic'}_Fun.xlsx"
+        generate_fun_excel(ir, out)
+        return out
+
+    def parse_export(self, path: str) -> Any:
+        """解析 800xA 导出文件为 IR。path 可为 VAR xlsx 路径或 (VAR,FUN) 元组。"""
+        if isinstance(path, tuple):
+            var_path, fun_path = path
+        else:
+            var_path, fun_path = path, None
+        return parse_800xa_export(var_path, fun_path)
+
+    def dedupe(self, increment: Any, existing: Any) -> Any:
+        """增量去重，返回 (增量项, 重复项)。"""
+        return dedupe_increment(increment, existing)
