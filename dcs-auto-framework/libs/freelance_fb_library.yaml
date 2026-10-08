@@ -1,0 +1,222 @@
+# =============================================================================
+# ABB Freelance 功能块库（草案，官方库待核实）
+#
+# ABB Freelance 是 ABB 的 DCS（组态工具 Control Builder Freelance，
+# 老版本又称 DigiTool / AC 800F），编程语言支持 FBD/LD/ST（IEC 61131-3），
+# 内置功能块库含逻辑/定时器/计数器/运算/控制类功能块。以下为通用集合草案，
+# 类型名与管脚以 ABB Freelance 官方库为准，逐项标注"待核实"。
+#
+# 约束：本文件为草案，所有条目 source 标注"待核实"；官方库核实后替换。
+# =============================================================================
+library: Freelance
+platform: ABB Freelance（Control Builder Freelance 内置功能块，IEC 61131-3）
+comment: |
+  Freelance 功能块库草案（Control Builder 内置功能块）。
+  官方功能块库待核实；以下为通用 IEC 61131-3 逻辑/定时器/计数器/运算/
+  控制功能块草案，所有条目均标注"待核实"。
+
+fbs:
+  AND:
+    comment: 逻辑与门。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（全部输入为真时输出真）}
+    params: {}
+
+  OR:
+    comment: 逻辑或门。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（任一输入为真时输出真）}
+    params: {}
+
+  NOT:
+    comment: 逻辑非门。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 输入}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（取反）}
+    params: {}
+
+  XOR:
+    comment: 逻辑异或门。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（输入不同时输出真）}
+    params: {}
+
+  RS:
+    comment: 复位优先锁存器（IEC 命名 S/R1）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: S, pin_type: bool, direction: in, optional: false, description: 置位输入}
+      - {name: R1, pin_type: bool, direction: in, optional: false, description: 复位输入（复位优先）}
+      - {name: Q1, pin_type: bool, direction: out, optional: false, description: 锁存输出}
+    params: {}
+
+  SR:
+    comment: 置位优先锁存器（IEC 命名 S1/R）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: S1, pin_type: bool, direction: in, optional: false, description: 置位输入（置位优先）}
+      - {name: R, pin_type: bool, direction: in, optional: false, description: 复位输入}
+      - {name: Q1, pin_type: bool, direction: out, optional: false, description: 锁存输出}
+    params: {}
+
+  TON:
+    comment: 通电延时定时器（IEC 命名）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 启动输入}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 延时预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 延时输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时}
+    params: {}
+
+  TOF:
+    comment: 断电延时定时器（IEC 命名）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 输入（信号消失后延时翻转）}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 延时预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 延时输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时}
+    params: {}
+
+  TP:
+    comment: 脉冲定时器（IEC 命名）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 触发输入}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 脉冲宽度}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 脉冲输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时}
+    params: {}
+
+  CTU:
+    comment: 加计数器（IEC 命名）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: CU, pin_type: bool, direction: in, optional: false, description: 计数脉冲输入}
+      - {name: R, pin_type: bool, direction: in, optional: false, description: 复位}
+      - {name: PV, pin_type: int, direction: in, optional: false, description: 预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 计数到达输出}
+      - {name: CV, pin_type: int, direction: out, optional: true, description: 当前计数值}
+    params: {}
+
+  CTD:
+    comment: 减计数器（IEC 命名）。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: CD, pin_type: bool, direction: in, optional: false, description: 计数脉冲输入}
+      - {name: LD, pin_type: bool, direction: in, optional: false, description: 装载预设值}
+      - {name: PV, pin_type: int, direction: in, optional: false, description: 预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 计数到达零输出}
+      - {name: CV, pin_type: int, direction: out, optional: true, description: 当前计数值}
+    params: {}
+
+  ADD:
+    comment: 实数加法运算。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 运算草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被加数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 加数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 和}
+    params: {}
+
+  SUB:
+    comment: 实数减法运算。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 运算草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被减数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 减数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 差}
+    params: {}
+
+  MUL:
+    comment: 实数乘法运算。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 运算草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 乘数1}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 乘数2}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 积}
+    params: {}
+
+  DIV:
+    comment: 实数除法运算。待核实。
+    source: 待核实（Freelance 官方库未核实，IEC 61131-3 运算草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被除数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 除数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 商}
+    params: {}
+
+  INTG:
+    comment: 积分器（对输入信号积分，带复位）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 被积分信号}
+      - {name: RESET, pin_type: bool, direction: in, optional: true, description: 复位积分}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 积分输出}
+    params:
+      GAIN: {type: real, description: 积分增益（草案参数）}
+
+  PID:
+    comment: PID 控制器（连续 PID 草案：Freelance 标准 PID 类型名待核实）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: PV_IN, pin_type: real, direction: in, optional: false, description: 过程值输入}
+      - {name: SP_INT, pin_type: real, direction: in, optional: false, description: 设定值}
+      - {name: MAN_ON, pin_type: bool, direction: in, optional: true, description: 手动模式切换}
+      - {name: LMN, pin_type: real, direction: out, optional: false, description: 控制输出}
+    params:
+      GAIN:    {type: real, description: 比例增益（草案参数）}
+      TI:      {type: time, description: 积分时间（草案参数）}
+      TD:      {type: time, description: 微分时间（草案参数）}
+      OUT_HLM: {type: real, description: 输出上限（草案参数）}
+      OUT_LLM: {type: real, description: 输出下限（草案参数）}
+
+  LIMIT:
+    comment: 限幅（输出限制在上下限之间）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 输入}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 限幅输出}
+    params:
+      HIGH_LIMIT: {type: real, description: 上限（草案参数）}
+      LOW_LIMIT:  {type: real, description: 下限（草案参数）}
+
+  PULSE:
+    comment: 脉冲发生器（可配置宽度/周期的脉冲输出）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: ENABLE, pin_type: bool, direction: in, optional: false, description: 使能}
+      - {name: PULSE, pin_type: bool, direction: out, optional: false, description: 脉冲输出}
+    params:
+      PULSE_WIDTH: {type: time, description: 脉冲宽度（草案参数）}
+      PERIOD:      {type: time, description: 脉冲周期（草案参数）}
+
+  LATCH:
+    comment: 锁存器（输入保持/锁存输出）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 输入信号}
+      - {name: RESET, pin_type: bool, direction: in, optional: false, description: 复位}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 锁存输出}
+    params: {}
+
+  SEL:
+    comment: 二选一选择器（按开关选输入）。待核实。
+    source: 待核实（Freelance 官方库未核实，控制类草案）
+    pins:
+      - {name: G, pin_type: bool, direction: in, optional: false, description: 选择开关}
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 输入1（G=假 选中）}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 输入2（G=真 选中）}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 选择输出}
+    params: {}

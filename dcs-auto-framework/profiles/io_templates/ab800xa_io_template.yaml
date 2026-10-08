@@ -1,0 +1,279 @@
+# ABB 800xA IO 表格模板
+# 列定义基于 /workspace/knowledge/ 文档提取，来源标注逐列注明；禁止凭空编造官方列名。
+# 说明：knowledge 库中无 BDM（Batch Data Management）相关文档依据（全库检索无匹配），故不设 BDM 专列。
+
+template_name: ab800xa_io_template
+platform: ab800xa
+description: >-
+  ABB 800xA（Control Builder）IO 表格模板。输入侧为 IR 点位表标准列（对应
+  dcsaf/ir/point_table.py 字段），导入侧为 800xA VAR/PAR/FUN 批量导入表的文档明确列。
+
+columns:
+  # ---------- IO 输入侧（IR 点位表标准列） ----------
+  - name: 序号
+    group: io
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md 推断（§6.1 数据行=序号+内容）；PLC_ST编程检查与命名参考_20260914.md（Excel 行号用于结果回写原表）"
+    description: 行号/序号。用于错误定位与结果回写原表，导出时保留。
+
+  - name: 位号
+    group: io
+    required: true
+    ir_field: tag
+    source: "来源：ABB800xA_VAR_FUN对比与导入规则.md（变量名是唯一键）；F163_800xA编程规则总纲.md §4.7（变量命名 N562_xxx）"
+    description: 信号位号（IR 唯一键）。800xA 侧对应变量名/实例名，遵循命名规则 N<节点>_<系统>_<设备>_<信号>_<后缀>。
+
+  - name: 描述
+    group: io
+    required: true
+    ir_field: description
+    source: "来源：F163_800xA编程规则总纲.md §4.7（Description 格式：英文描述 / 中文描述 - 莱歇编号）"
+    description: 信号描述。800xA Description 列格式为「英文描述 / 中文描述 - 莱歇编号」。
+
+  - name: 信号类型
+    group: io
+    required: true
+    ir_field: signal_type
+    source: "来源：57E_IO点表核对方法论与经验教训总结.md（信号类型 DI/DO/AI/AO）；IR 模型 point_table.py"
+    description: DI/DO/AI/AO 四类。AI/AO 必填量程与单位，报警限仅模拟量使用。
+
+  - name: 量程下限
+    group: io
+    required: false
+    ir_field: range_low
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 模拟量量程下限，AI/AO 必填。
+
+  - name: 量程上限
+    group: io
+    required: false
+    ir_field: range_high
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 模拟量量程上限，AI/AO 必填。
+
+  - name: 单位
+    group: io
+    required: false
+    ir_field: unit
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 工程单位（如 bar、℃、m³/h）。
+
+  - name: 报警下限
+    group: io
+    required: false
+    ir_field: alarm_low
+    source: "来源：F163_800xA编程规则总纲.md §4.5 推断（SignalInReal 六级报警 EnableL/LL/LLL，温度只启用 H/HH）"
+    description: 模拟量报警下限（L/LL），需在量程内。800xA 侧阈值在 ST 中初始化，禁止写入 Initial Value 列（Error 1340）。
+
+  - name: 报警上限
+    group: io
+    required: false
+    ir_field: alarm_high
+    source: "来源：F163_800xA编程规则总纲.md §4.5 推断（SignalInReal 六级报警 H/HH）"
+    description: 模拟量报警上限（H/HH），需在量程内。800xA 侧阈值在 ST 中初始化。
+
+  - name: 系统分组
+    group: io
+    required: false
+    ir_field: system_group
+    source: "来源：F163_800xA编程规则总纲.md §6.1 推断（G 组↔莱歇系统映射，如 G20 油箱加热器组）"
+    description: 系统分组（G10~G71 等）。决定变量归属哪个组的 Var.xlsx/Fun.xlsx。
+
+  - name: 连锁关联
+    group: io
+    required: false
+    ir_field: interlock_ref
+    source: "来源：F163_800xA编程规则总纲.md §6.2 推断（连锁类型 STAITL/OPITL/PRTITL/PSTITL/PQSTOP）"
+    description: 关联连锁引用，多值用逗号分隔。连锁逻辑在 FBD/ST 实现，本列仅做工程输入记录。
+
+  - name: DP设备
+    group: io
+    required: false
+    ir_field: dp.device
+    source: "来源：IR 模型（point_table.py dp 字段）推断；DP 通讯规则见 20-DP通讯与设备功能块/ 文档"
+    description: DP 通讯设备名（仅 DP 通讯点）。对应 SMOTOR_PROV/ABBLVVVF/ABBMVVVF 等功能块。
+
+  - name: DP槽位
+    group: io
+    required: false
+    ir_field: dp.slot
+    source: "来源：IR 模型（point_table.py dp 字段）推断"
+    description: DP 站内槽位号。
+
+  - name: 字节序
+    group: io
+    required: false
+    ir_field: dp.byte_order
+    source: "来源：IR 模型（point_table.py dp 字段）推断"
+    description: DP 字节序 low_high / high_low / none。
+
+  # ---------- 导入侧：VAR 表（来源：中压变频器_开发规则.md §6.2 列结构） ----------
+  - name: VAR.序号
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列含「序号」；§6.1 数据行=序号+内容，末行=日期+页码）"
+    description: VAR 表数据行序号。
+
+  - name: VAR.Name
+    group: import
+    required: true
+    ir_field: tag
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Name）；ABB800xA_VAR_FUN对比与导入规则.md（变量名唯一键，忽略大小写去空格）"
+    description: 变量名（唯一键）。取位号 tag 的 800xA 工程化形式；增量=设计所需−现场已有，合并后全表唯一。
+
+  - name: VAR.Data Type
+    group: import
+    required: true
+    ir_field: signal_type
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Data Type）；F163_800xA编程规则总纲.md §4.1（组内简单变量类型 bool/BoolIO/dint/time/string/SignalLib.Signal）"
+    description: 变量数据类型。由 IR signal_type 派生：DI/DO→bool 或 BoolIO（硬件直访），AI/AO→Real 或 RealIO 等；硬件 I/O 映射带 IO 后缀。
+
+  - name: VAR.Start Attribute
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Start Attribute）"
+    description: 启动属性。
+
+  - name: VAR.Attributes
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Attributes）；ABB800xA_VAR_FUN对比与导入规则.md（名称、数据类型、初始值和属性已确认）"
+    description: 变量属性（retain 等）。in_out 不带 retain（F163 总纲 §5.7）。
+
+  - name: VAR.Initial Value
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Initial Value）；F163_800xA编程规则总纲.md §4.5/§5.4（可填 T#1S、FALSE、'string'；禁止结构体聚合 Error 1340）"
+    description: 初始值。时间字面量 T#1S、布尔 FALSE、字符串 'xxx' 写此列；禁止写结构体聚合语法（LevelH:=60.0 报 Error 1340），阈值改在 ST 初始化。
+
+  - name: VAR.Description
+    group: import
+    required: false
+    ir_field: description
+    source: "来源：中压变频器_开发规则.md（§6.2 VAR 列 Description）"
+    description: 变量说明，格式见 F163 总纲 §4.7。
+
+  # ---------- 导入侧：PAR 表（来源：中压变频器_开发规则.md §6.2/§6.3） ----------
+  - name: PAR.序号
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列含「序号」）"
+    description: PAR 表数据行序号。
+
+  - name: PAR.Name
+    group: import
+    required: true
+    ir_field: tag
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Name）；F163_800xA编程规则总纲.md §5.7（VAR+PAR 合并后名称唯一，Error 1000 大小写不敏感）"
+    description: 参数名。VAR+PAR 合并后名称唯一。
+
+  - name: PAR.Data Type
+    group: import
+    required: true
+    ir_field: signal_type
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Data Type）"
+    description: 参数数据类型，由 IR signal_type 派生。
+
+  - name: PAR.Start Attribute
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Start Attribute）"
+    description: 启动属性。
+
+  - name: PAR.Attributes
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Attributes）"
+    description: 参数属性。
+
+  - name: PAR.Direction
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.3 Direction 值：in 只读输入 / out 只写输出 / in_out 读写）"
+    description: 参数方向。in=只读输入，out=只写输出，in_out=读写。in_out 不带 retain（F163 总纲 §5.7）。
+
+  - name: PAR.FD Port
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 FD Port）"
+    description: FD 端口连接。
+
+  - name: PAR.Initial Value
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Initial Value）"
+    description: 参数初始值。
+
+  - name: PAR.Description
+    group: import
+    required: false
+    ir_field: description
+    source: "来源：中压变频器_开发规则.md（§6.2 PAR 列 Description）"
+    description: 参数说明。
+
+  # ---------- 导入侧：FUN 表（来源：中压变频器_开发规则.md §6.2 + §5） ----------
+  - name: FUN.序号
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 FUN 列含「序号」）"
+    description: FUN 表数据行序号。
+
+  - name: FUN.Name
+    group: import
+    required: true
+    ir_field: tag
+    source: "来源：中压变频器_开发规则.md（§6.2 FUN 列 Name）；ABB800xA_VAR_FUN对比与导入规则.md §4（功能块实例名唯一键）"
+    description: 功能块实例名（唯一键）。G20 已存在且类型 Group1 时不得重复新增。
+
+  - name: FUN.Function Block Type
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 FUN 列 Function Block Type）；F163_800xA编程规则总纲.md §4.3（选型：MOTOR1/SMOTOR_PROV/SignalInReal/GROUP1/VALVE1/ABBLVVVF/ABBMVVVF 等）"
+    description: 功能块类型，类型名大小写敏感（TOf、R_Trig、AlarmCond 等）。FUN 表实例必须在 Code 中被调用（Warning 1542）。
+
+  - name: FUN.Task Connection
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：中压变频器_开发规则.md（§6.2 FUN 列 Task Connection）"
+    description: 任务连接（如 Normal 任务）。
+
+  - name: FUN.Description
+    group: import
+    required: false
+    ir_field: description
+    source: "来源：中压变频器_开发规则.md（§6.2 FUN 列 Description）"
+    description: 功能块实例说明（设备名注释，格式见 F163 总纲 §4.7/§3.8）。
+
+export_format:
+  title_row: >-
+    第1行为合并标题行「Function Block Type - TAYNINH.xxx - Variables/Parameters/Function Blocks」；
+    第2行为列头；数据行=序号+内容；末行=日期+页码。
+    （来源：中压变频器_开发规则.md §6.1）
+  file_naming: >-
+    Gxx_..._Var.xlsx（组内简单变量 bool/BoolIO/dint/time/string/SignalLib.Signal）、
+    Gxx_..._Fun.xlsx（组内 FB 实例）。（来源：F163_800xA编程规则总纲.md §4.1）
+  import_order: >-
+    STRUCT（先建数据类型）→ VAR → PAR → FUN → 粘贴 ST → FBD 连线 → 编译整个 Program（非单图页）→ 保存编译日志。
+    （来源：F163_800xA编程规则总纲.md §3.5；整改说明与导入顺序.md 三）
+  uniqueness: >-
+    变量名/实例名是唯一键，比较忽略大小写、去首尾空格；增量表=设计所需−现场已有，
+    不得含现场已有名称；合并后全表唯一。VAR 表中不得混入 FUN 表记录。
+    （来源：ABB800xA_VAR_FUN对比与导入规则.md §3/§4/§7）
+  bdm_note: >-
+    knowledge 库全库检索无 BDM（Batch Data Management）相关文档，未设 BDM 专列；
+    如需 BDM 批量导入格式，待补充官方依据后再扩展。
+    （来源：/workspace/knowledge/ 全库 Grep 无匹配）

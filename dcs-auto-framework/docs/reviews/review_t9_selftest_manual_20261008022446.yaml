@@ -1,0 +1,10 @@
+draft_id: t9_selftest_manual
+reviewer: 审核人（示例）
+action: approve
+comments: 示例审核通过：差压 AI、风机 MOTOR1、连锁 RS 结构合理
+reviewed_at: '20261008022446'
+draft_summary:
+  requirement_text: 大布袋进出口差压高跳停出口风机
+  points_count: 4
+  logic_count: 3
+  missing_source: []

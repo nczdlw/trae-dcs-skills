@@ -1,0 +1,2146 @@
+# =============================================================================
+# ABB 800xA 功能块库（从 knowledge 文档提取，F163 项目基线）
+#
+# 来源文件（只读基准）：
+#   - knowledge/90-项目档案/F163_800xA编程规则总纲.md        （总纲，唯一现行规则入口）
+#   - knowledge/20-DP通讯与设备功能块/ABB_800XA_DP功能块开发规则_20260715_2240.md
+#   - knowledge/20-DP通讯与设备功能块/中压变频器_FB开发规则2.md
+#   - knowledge/20-DP通讯与设备功能块/中压变频器_功能块逻辑说明.md
+#   - knowledge/20-DP通讯与设备功能块/大布袋_功能块开发规则1.md
+#   - knowledge/20-DP通讯与设备功能块/皮带秤_功能块逻辑说明.md
+#   - knowledge/20-DP通讯与设备功能块/皮带秤_开发说明.md
+#   - knowledge/20-DP通讯与设备功能块/包装机_开发规则.md
+#   - knowledge/30-莱歇磨与连锁分析/莱歇磨分组编程规则.md
+#   - knowledge/30-莱歇磨与连锁分析/莱歇磨FBD程序架构说明.md
+#
+# 来源标注规则：文档明确 -> "来源：<文件名>"；推断 -> "来源：<文件名>（管脚推断）"
+# 注意：MOTOR1/SignalInReal/GROUP1 的管脚有正式管脚表来源；SMOTOR_PROV 等
+#       文档未给正式管脚表，管脚为按文档要点推断，已在 source 标注。
+# =============================================================================
+library: AB800xA
+platform: ABB 800xA V6.1.0（Control Builder M，IEC 61131-3）
+comment: |
+  F163 越南粉磨站项目 800xA 功能块库，从 knowledge 文档提取。
+  含总纲选型表 10 类（MOTOR1/SMOTOR_PROV/SMOTORD_PROV/SignalInReal/
+  SignalInBool/GROUP1/VALVE1/PVALVE/ABBLVVVF/ABBMVVVF）、DP 设备规则 3 类
+  （ITEC_BATCH/KDMC2880/HAVER）与通用标准功能块 15 类。
+  管脚/参数均标注来源；推断内容显式标注。
+
+fbs:
+  # ---------------------------------------------------------------
+  # 一、总纲功能块选型表类型（F163_800xA编程规则总纲.md §4.3）
+  # ---------------------------------------------------------------
+
+  MOTOR1:
+    comment: |
+      普通电机/加热器控制（硬件 DI/DO 回路）。
+      要点：三个 lock 管脚 true=锁定、直接赋值不取反；safety_lock 经 TOf
+      延时并触发 Fault；MOTOR1 没有 O2 管脚，O2 是硬件 DO（逻辑与
+      start_lock 相反，true=许可）。
+    source: 来源：莱歇磨分组编程规则.md / F163_800xA编程规则总纲.md
+    pins:
+      - name: Description
+        pin_type: string
+        direction: in
+        optional: true
+        description: 设备描述（string[80]，格式"英文/中文 - 莱歇编号"）
+      - name: Ready
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 就绪反馈（DI）
+      - name: Running
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 运行反馈（DI）
+      - name: Emg_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停信号
+      - name: Group_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组启动（来自 GROUP 的 G_start.Bx）
+      - name: Group_stop
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组停止（来自 GROUP 的 G_stop.Bx）
+      - name: Local_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地启动
+      - name: start_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动锁定（Initial=true，true=锁定阻止启动）
+      - name: process_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 过程锁定（Initial=true，true=锁定，运行中停止）
+      - name: safety_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全锁定（Initial=true，true=锁定，经 TOf 延时后停止并触发 Fault）
+      - name: speedswitch
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 速度开关
+      - name: ext_fault
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 外部故障
+      - name: LOCAL
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地/远程模式
+      - name: Drive
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 驱动输出（→ 硬件 DO）
+      - name: Fault
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 故障输出
+    params: {}
+
+  SMOTOR_PROV:
+    comment: |
+      DP 通讯电机（Profibus DP，Control Word/Status Word 位打包）。
+      要点：32 位数据只能转 DintIO/RealIO（DwordIO 不可用）；Release bit
+      （CW1 bit3）必须始终置 1；ST 中 DintIO 直接兼容 DInt 无需转换。
+      文档未提供正式管脚表，以下为按 DP 电机模式推断的接口。
+    source: 来源：F163_800xA编程规则总纲.md / 莱歇磨分组编程规则.md（管脚推断）
+    pins:
+      - name: Group_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组启动命令（推断）
+      - name: Group_stop
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组停止命令（推断）
+      - name: Start_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动锁定 true=锁定（推断）
+      - name: process_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 过程锁定 true=锁定（推断）
+      - name: safety_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全锁定 true=锁定（推断）
+      - name: Emg_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停信号（推断）
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 故障复位（推断）
+      - name: StatusWord
+        pin_type: DintIO
+        direction: in
+        optional: false
+        description: 状态字（DP 输入，ST 用 .Value 读取，推断）
+      - name: ControlWord
+        pin_type: DintIO
+        direction: out
+        optional: false
+        description: 控制字（DP 输出，bit3 释放位恒置 1，推断）
+      - name: Running
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行反馈（推断）
+      - name: Ready
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 就绪（推断）
+      - name: Fault
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 故障（推断）
+    params: {}
+
+  SMOTORD_PROV:
+    comment: |
+      DP 通讯双向电机（正/反转，Profibus DP）。
+      总纲选型表标注"双方向 SMOTORD_PROV"；文档未提供管脚表，管脚为按
+      双方向电机推断（在 SMOTOR_PROV 基础上增加方向选择）。
+    source: 来源：F163_800xA编程规则总纲.md（管脚推断）
+    pins:
+      - name: Group_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组启动命令（推断）
+      - name: Group_stop
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 组停止命令（推断）
+      - name: Start_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动锁定 true=锁定（推断）
+      - name: process_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 过程锁定 true=锁定（推断）
+      - name: safety_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全锁定 true=锁定（推断）
+      - name: Emg_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停信号（推断）
+      - name: Dir_fwd
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 正向运行命令（推断）
+      - name: Dir_rev
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 反向运行命令（推断）
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 故障复位（推断）
+      - name: StatusWord
+        pin_type: DintIO
+        direction: in
+        optional: false
+        description: 状态字（DP 输入，推断）
+      - name: ControlWord
+        pin_type: DintIO
+        direction: out
+        optional: false
+        description: 控制字（DP 输出，推断）
+      - name: Running
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行反馈（推断）
+      - name: Ready
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 就绪（推断）
+      - name: Fault
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 故障（推断）
+    params: {}
+
+  SignalInReal:
+    comment: |
+      模拟量监测（SignalLib 标准库，六级报警 L/LL/LLL/H/HH/HHH）。
+      要点：连锁只用 GTHStat/GTHHStat（受 Enable 控制），不用 GTH/GTHAct；
+      温度只启用 H/HH（EnableL/LL/LLL:=FALSE），压力按正式图启用 L/H(/HH)；
+      阈值在 ST 中初始化（禁止 Var 表 Initial Value 写结构体聚合，Error 1340）；
+      每个实例配套 4 个变量（_T_IP/SignalLib.Signal、_T_H、_T_HH、报警名 string）。
+    source: 来源：莱歇磨分组编程规则.md / F163_800xA编程规则总纲.md
+    pins:
+      - name: Name
+        pin_type: string
+        direction: in
+        optional: false
+        description: 报警对象名称（string[30]）
+      - name: In
+        pin_type: RealIO
+        direction: in_out
+        optional: false
+        description: AI 模拟量输入（硬件配置创建，ST 用 .Value 访问）
+      - name: Out
+        pin_type: real
+        direction: out
+        optional: false
+        description: 标准化工程值输出
+      - name: InteractionPar
+        pin_type: SignalInRealPar
+        direction: in_out
+        optional: false
+        description: 交互参数结构体（阈值/使能在 ST 中初始化）
+      - name: GTH
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 当前值>LevelH 纯比较结果（不受 Enable 控制）
+      - name: GTHStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: H 报警状态（受 Enable 控制，连锁逻辑用此）
+      - name: GTHAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: H 报警动作（受 Enable 和 Inhibit 双重控制）
+      - name: GTHH
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 当前值>LevelHH 纯比较结果（命名按 GTH 规律推断）
+      - name: GTHHStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: HH 报警状态（受 Enable 控制）
+      - name: GTHHAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: HH 报警动作（推断）
+      - name: GTL
+        pin_type: bool
+        direction: out
+        optional: true
+        description: L 报警纯比较（命名推断）
+      - name: GTLStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: L 报警状态（推断）
+      - name: GTLAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: L 报警动作（推断）
+      - name: GTLL
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LL 报警纯比较（推断）
+      - name: GTLLStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LL 报警状态（推断）
+      - name: GTLLAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LL 报警动作（推断）
+      - name: GTLLL
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LLL 报警纯比较（推断）
+      - name: GTLLLStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LLL 报警状态（推断）
+      - name: GTLLLAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: LLL 报警动作（推断）
+      - name: GTHHH
+        pin_type: bool
+        direction: out
+        optional: true
+        description: HHH 报警纯比较（六级报警，推断）
+      - name: GTHHHStat
+        pin_type: bool
+        direction: out
+        optional: true
+        description: HHH 报警状态（推断）
+      - name: GTHHHAct
+        pin_type: bool
+        direction: out
+        optional: true
+        description: HHH 报警动作（推断）
+    params:
+      LevelH:
+        type: real
+        description: H 报警阈值（ST 初始化，如温度 60.0）
+      LevelHH:
+        type: real
+        description: HH 报警阈值（如温度 65.0）
+      LevelL:
+        type: real
+        description: L 报警阈值（压力信号用，如 0.5/15.0）
+      LevelLL:
+        type: real
+        description: LL 报警阈值（推断字段）
+      LevelLLL:
+        type: real
+        description: LLL 报警阈值（推断字段）
+      LevelHHH:
+        type: real
+        description: HHH 报警阈值（推断字段）
+      EnableH:
+        type: bool
+        description: H 报警使能（推断字段，默认启用）
+      EnableHH:
+        type: bool
+        description: HH 报警使能（温度启用，压力按图）
+      EnableHHH:
+        type: bool
+        description: HHH 报警使能（文档出现，默认 FALSE）
+      EnableL:
+        type: bool
+        description: L 报警使能（温度 FALSE，压力按图启用）
+      EnableLL:
+        type: bool
+        description: LL 报警使能（默认 FALSE）
+      EnableLLL:
+        type: bool
+        description: LLL 报警使能（默认 FALSE）
+
+  SignalInBool:
+    comment: |
+      布尔信号监测（DI 信号标准化）。
+      总纲选型表与分组编程规则仅说明用途（DI 信号标准化），
+      文档未提供管脚表，以下为按布尔信号监测推断的接口。
+    source: 来源：F163_800xA编程规则总纲.md / 莱歇磨分组编程规则.md（管脚推断）
+    pins:
+      - name: Name
+        pin_type: string
+        direction: in
+        optional: true
+        description: 信号对象名称（推断）
+      - name: In
+        pin_type: BoolIO
+        direction: in_out
+        optional: false
+        description: DI 布尔输入（硬件通道，推断）
+      - name: Out
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 标准化布尔输出（推断）
+    params: {}
+
+  GROUP1:
+    comment: |
+      莱歇专用组控制（工程内部类型，非库内标准 Group）。
+      从 Group 复制出 GROUP1，新增 CON/COFF（bool 输入、单周期脉冲远程启停）；
+      禁止 Gxx.Gstart_cmd 式外部直写内部变量；G_start/G_stop 为 Boolean16，
+      .B1~.Bn 按序对应组内设备；GROUP_STATUS 供上级组直接读取。
+    source: 来源：F163_800xA编程规则总纲.md / 莱歇磨分组编程规则.md
+    pins:
+      - name: STEP
+        pin_type: int
+        direction: in
+        optional: false
+        description: 组内设备数（G10 主辅机组为单级 STEP=1）
+      - name: run_1
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 各设备运行反馈（run_1~run_n 按设备数扩展）
+      - name: Emg_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停信号
+      - name: G_start
+        pin_type: Boolean16
+        direction: out
+        optional: false
+        description: 组启动命令（位访问 .B1~.Bn 对应组内设备）
+      - name: G_stop
+        pin_type: Boolean16
+        direction: out
+        optional: false
+        description: 组停止命令（位访问 .B1~.Bn）
+      - name: GROUP_STATUS
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 组状态（上级组直接读取，不重复计算）
+      - name: CON
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 远程启动命令（单周期脉冲，GROUP1 新增接口）
+      - name: COFF
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 远程停止命令（单周期脉冲，GROUP1 新增接口）
+    params: {}
+
+  VALVE1:
+    comment: |
+      阀门控制。总纲选型表（§4.3）明确"阀门 VALVE1 / PVALVE"，
+      但文档未提供管脚定义，待从现场库或官方手册补充，暂不列管脚。
+    source: 来源：F163_800xA编程规则总纲.md（仅选型表，管脚未提供）
+    pins: []
+    params: {}
+
+  PVALVE:
+    comment: |
+      阀门控制。总纲选型表（§4.3）明确"阀门 VALVE1 / PVALVE"，
+      但文档未提供管脚定义，待从现场库或官方手册补充，暂不列管脚。
+    source: 来源：F163_800xA编程规则总纲.md（仅选型表，管脚未提供）
+    pins: []
+    params: {}
+
+  ABBLVVVF:
+    comment: |
+      低压变频器（FPBA-01 通信模块，ABB Drives 行规，20000=100%）。
+      逻辑：启动条件（Group_start AND Start_lock AND start_lock_en AND RDY_ON
+      AND RDY_RUN）→ RS 锁存 drive → 状态机 CW（0x047E/0x047F，bit3 经 500ms
+      延时使能）→ 运行监控（TOn run_time 超时故障，SR 锁存）→ 给定换算
+      REAL_TO_DINT(SET_L/Freq_Max*20000)。
+      换算：频率 20000=100%，电流/功率 10=1 单位。LV 4 报警。
+      信号名来自文档，管脚方向/类型按语义推断。
+    source: 来源：中压变频器_功能块逻辑说明.md / 中压变频器_FB开发规则2.md / F163_800xA编程规则总纲.md（管脚推断）
+    pins:
+      - name: Group_start
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 组启动命令
+      - name: Start_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动联锁 true=允许
+      - name: start_lock_en
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动联锁使能（启动后自锁断开）
+      - name: Single_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 单台启动
+      - name: Single_stop
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 单台停止（斜坡停车 OFF1）
+      - name: EMG_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停（LV 直接控制 OFF3 快速停车）
+      - name: Ext_fault
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 外部故障
+      - name: process_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 工艺联锁 true=允许，断开即停止
+      - name: safe_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全联锁 true=允许，经 TOf 延时
+      - name: safe_lock_en
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全联锁使能
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 故障复位（CW bit7 复位脉冲）
+      - name: EXTINPUT
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 自动/本地给定选择（true=自动给定）
+      - name: SET_AUTO
+        pin_type: real
+        direction: in
+        optional: true
+        description: 自动给定（Hz）
+      - name: LOCAL_PERM
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地允许（本地升/降速使能）
+      - name: Freq_Up
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地升速（每周期 +0.2Hz）
+      - name: Freq_Dn
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地降速（每周期 -0.2Hz）
+      - name: Freq_Max
+        pin_type: real
+        direction: in
+        optional: false
+        description: 最大频率（给定上限）
+      - name: Frq_min
+        pin_type: real
+        direction: in
+        optional: false
+        description: 最小频率（给定下限）
+      - name: run_time
+        pin_type: time
+        direction: in
+        optional: false
+        description: 运行确认延时（TOn 超时判故障）
+      - name: ZSPSWITCH
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 零速开关（停机时强制给定归零）
+      - name: T_RST
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 运行时间复位（TimerU）
+      - name: INPUTDINT1
+        pin_type: dint
+        direction: in
+        optional: false
+        description: 状态字 SW（VVVFDT.INPUTDINT1，PZD1）
+      - name: INPUTDINT2
+        pin_type: dint
+        direction: in
+        optional: false
+        description: 实际值1 频率（PZD2/ACT1）
+      - name: INPUTDINT3
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值2 电流（PZD3/ACT2）
+      - name: INPUTDINT4
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值3（PZD4/ACT3）
+      - name: INPUTDINT5
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值4 功率（PZD5/ACT4）
+      - name: OUTPUTDINT1
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 控制字 CW（VVVFDT.OUTPUTDINT1，PZD1）
+      - name: OUTPUTDINT2
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 给定值1 频率 REF1（PZD2）
+      - name: OUTPUTDINT4
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 给定值3 控制位 REF3（PZD4）
+      - name: READY
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 就绪（RDY_ON AND RDY_RUN AND READY1）
+      - name: RUNNING
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行中（AT_SETPOINT AND drive）
+      - name: FAULT
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 综合故障（超时或跳闸，SR 锁存）
+      - name: STATUS
+        pin_type: dint
+        direction: out
+        optional: true
+        description: 原始状态字（画面诊断）
+      - name: NO_Power
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 断电（命令运行但无准备合闸，锁存）
+      - name: LOC_STOP
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 本地停止（远程信号丢失，锁存）
+      - name: Frequency
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际频率（Hz）
+      - name: Current
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际电流
+      - name: Current_lasttrip
+        pin_type: real
+        direction: out
+        optional: true
+        description: 跳闸电流捕获（F_Trig 下降沿）
+      - name: drive
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 驱动命令（RS 输出）
+    params:
+      CW_STOP:
+        type: word
+        default: "0x047E"
+        description: 停止/就绪控制字（bit0=0）
+      CW_RUN:
+        type: word
+        default: "0x047F"
+        description: 运行控制字（bit0=1）
+      CW_RESET:
+        type: word
+        default: "0x04FE"
+        description: 故障复位控制字（bit7=1 后回 0x047E）
+      CW_EMG:
+        type: word
+        default: "0x043E"
+        description: 急停控制字（bit2=0）
+
+  ABBMVVVF:
+    comment: |
+      中压变频器（RPBA-01 通信模块，PROFIdrive 行规，20000=100%）。
+      与 ABBLVVVF 差异：启动条件增加 READY1 且用 NOT B6(SWC_ON_INHIB) 替代
+      RDY_RUN；急停经 TOf_1（ES_TIME）延时；电机温度监控（motor_temp=
+      INPUTDINT6/10 > temp_Limit 锁存 TEMP_ALARM）；频率/转速/百分比三模式
+      （set_type）；MV 6 报警。信号名来自文档，方向/类型按语义推断。
+    source: 来源：中压变频器_功能块逻辑说明.md / 中压变频器_FB开发规则2.md / F163_800xA编程规则总纲.md（管脚推断）
+    pins:
+      - name: Group_start
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 组启动命令
+      - name: Start_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动联锁 true=允许
+      - name: start_lock_en
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动联锁使能（启动后自锁断开）
+      - name: READY1
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 外部就绪信号（冷却水/润滑油就绪，MV 专用）
+      - name: Single_start
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 单台启动
+      - name: Single_stop
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 单台停止
+      - name: EMG_stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 急停（MV 经 TOf_1/ES_TIME 延时）
+      - name: Ext_fault
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 外部故障
+      - name: process_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 工艺联锁 true=允许
+      - name: safe_lock
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全联锁 true=允许，经 TOf_3/safe_lock_time 延时
+      - name: safe_lock_en
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 安全联锁使能
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 故障复位
+      - name: EXTINPUT
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 自动/本地给定选择
+      - name: SET_AUTO
+        pin_type: real
+        direction: in
+        optional: true
+        description: 自动给定（Hz/rpm/% 按 set_type）
+      - name: LOCAL_PERM
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地允许
+      - name: Freq_Up
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地升速
+      - name: Freq_Dn
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 本地降速
+      - name: Freq_Max
+        pin_type: real
+        direction: in
+        optional: false
+        description: 最大频率
+      - name: Frq_min
+        pin_type: real
+        direction: in
+        optional: false
+        description: 最小频率（MV 下限固定 5.0Hz）
+      - name: run_time
+        pin_type: time
+        direction: in
+        optional: false
+        description: 运行确认延时
+      - name: ES_TIME
+        pin_type: time
+        direction: in
+        optional: false
+        description: 急停延时（TOf_1，MV 专用）
+      - name: safe_lock_time
+        pin_type: time
+        direction: in
+        optional: false
+        description: 安全联锁延时（TOf_3，MV 专用）
+      - name: temp_Limit
+        pin_type: real
+        direction: in
+        optional: false
+        description: 电机温度限值（MV 专用，超温锁存 TEMP_ALARM）
+      - name: set_type
+        pin_type: int
+        direction: in
+        optional: true
+        description: 控制模式 0=频率/1=转速/2=百分比（MV 专用）
+      - name: SPEED_MAX
+        pin_type: real
+        direction: in
+        optional: true
+        description: 最大转速（MV 专用，转速模式换算）
+      - name: ZSPSWITCH
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 零速开关
+      - name: T_RST
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 运行时间复位
+      - name: INPUTDINT1
+        pin_type: dint
+        direction: in
+        optional: false
+        description: 状态字 SW（VVVFDT.INPUTDINT1，PZD1）
+      - name: INPUTDINT2
+        pin_type: dint
+        direction: in
+        optional: false
+        description: 实际值1 频率（PZD2/ACT1）
+      - name: INPUTDINT3
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值2 电流（PZD3/ACT2）
+      - name: INPUTDINT4
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值3（PZD4/ACT3）
+      - name: INPUTDINT5
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值4 功率（PZD5/ACT4）
+      - name: INPUTDINT6
+        pin_type: dint
+        direction: in
+        optional: true
+        description: 实际值5 温度（PZD6/ACT5，MV 专用，/10=°C）
+      - name: OUTPUTDINT1
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 控制字 CW（VVVFDT.OUTPUTDINT1，PZD1）
+      - name: OUTPUTDINT2
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 给定值1 REF1（PZD2）
+      - name: OUTPUTDINT4
+        pin_type: dint
+        direction: out
+        optional: false
+        description: 给定值3 REF3（PZD4）
+      - name: READY
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 就绪（RDY_ON AND RDY_RUN AND READY1）
+      - name: RUNNING
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行中（AT_SETPOINT AND drive）
+      - name: FAULT
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 综合故障（超时或跳闸，锁存）
+      - name: STATUS
+        pin_type: dint
+        direction: out
+        optional: true
+        description: 原始状态字
+      - name: NO_Power
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 断电（锁存）
+      - name: LOC_STOP
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 本地停止（锁存）
+      - name: TEMP_ALARM
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 电机温度报警（MV 专用，锁存）
+      - name: Frequency
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际频率（Hz）
+      - name: speed_act
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际转速（rpm，MV 专用）
+      - name: percent_act
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际百分比（%，MV 专用）
+      - name: Current
+        pin_type: real
+        direction: out
+        optional: true
+        description: 实际电流
+      - name: Current_lasttrip
+        pin_type: real
+        direction: out
+        optional: true
+        description: 跳闸电流捕获
+      - name: drive
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 驱动命令（RS 输出）
+    params:
+      CW_STOP:
+        type: word
+        default: "0x047E"
+        description: 停止/就绪控制字
+      CW_RUN:
+        type: word
+        default: "0x047F"
+        description: 运行控制字
+      CW_RESET:
+        type: word
+        default: "0x04FE"
+        description: 故障复位控制字
+      CW_EMG:
+        type: word
+        default: "0x043E"
+        description: 急停控制字
+
+  # ---------------------------------------------------------------
+  # 二、DP 设备规则类型（各设备功能块）
+  # ---------------------------------------------------------------
+
+  ITEC_BATCH:
+    comment: |
+      皮带秤/配料秤（Schenck INTECONT Tersus，Ident 0x0C9B，FIXED_8_8 模块
+      32 字节 IN + 32 字节 OUT，32-bit 独立变量路线）。
+      要点：控制字1 Bit3 释放位必须始终置 1；Bit31 打包用 -2147483647-1；
+      Start/Stop/Reset 经 TP 1s 脉冲；Running/Heavy_Alarm/Warning 经 TOf 1s
+      滤波；报警 3 个（Heavy 800/Warning 500/No_Release 500）；事件 5 个；
+      配料秤接 Flow_Setpoint，皮带计量秤不接。
+    source: 来源：皮带秤_功能块逻辑说明.md / 皮带秤_开发说明.md / ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: DCS_Start
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动命令（TP 1s 脉冲 → 控制字1 bit0）
+      - name: DCS_Stop
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 停止命令（TP 1s 脉冲 → 控制字1 bit1）
+      - name: DCS_Reset
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 复位命令（TP 1s 脉冲 → 控制字1 bit2）
+      - name: Flow_Setpoint
+        pin_type: real
+        direction: in
+        optional: true
+        description: 流量设定值（配料秤用，皮带秤不接 → dpOut_FlowSet）
+      - name: Select_Batch
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 选择批量模式（控制字1 bit16）
+      - name: Exit_Batch
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 退出批量（控制字1 bit17）
+      - name: Interrupt_Batch
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 中断批量（控制字1 bit18）
+      - name: Accum1_Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 累积量1清零（控制字1 bit6）
+      - name: Accum2_Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 累积量2清零（控制字1 bit7）
+      - name: Activate_PreFeeder
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 激活预给料机（控制字1 bit30）
+      - name: Stop_PreFeeder
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 停止预给料机（控制字1 bit31，-2147483647-1 打包）
+      - name: Cmd_Tare
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 去皮重（控制字2 bit16）
+      - name: Cmd_Zero
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 调零（控制字2 bit17）
+      - name: Cmd_SpanCal
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 量程标定（控制字2 bit18）
+      - name: Cmd_PulseCal
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 脉冲标定（控制字2 bit19）
+      - name: Cmd_Apply
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 确认执行（控制字2 bit27）
+      - name: Cmd_Cancel
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 取消操作（控制字2 bit28）
+      - name: Cmd_GetTime
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 读取设备时间（控制字2 bit29）
+      - name: dpIn_Status1
+        pin_type: DintIO
+        direction: in
+        optional: false
+        description: 状态字1（IW.1，位解包 .Value）
+      - name: dpIn_Status2
+        pin_type: DintIO
+        direction: in
+        optional: false
+        description: 状态字2（IW.2）
+      - name: dpIn_Flow
+        pin_type: RealIO
+        direction: in
+        optional: false
+        description: 实际流量（IW.3，kg/h）
+      - name: dpIn_Accum1
+        pin_type: RealIO
+        direction: in
+        optional: true
+        description: 累积量1（IW.4，kg）
+      - name: dpIn_Load
+        pin_type: RealIO
+        direction: in
+        optional: true
+        description: 皮带负荷（IW.5，kg/m）
+      - name: dpIn_Speed
+        pin_type: RealIO
+        direction: in
+        optional: true
+        description: 皮带速度（IW.6，m/s）
+      - name: dpIn_Accum2
+        pin_type: RealIO
+        direction: in
+        optional: true
+        description: 累积量2（IW.7，kg）
+      - name: dpIn_Spare0
+        pin_type: DintIO
+        direction: in
+        optional: true
+        description: 输入预留（IW.0）
+      - name: dpOut_Ctrl1
+        pin_type: DintIO
+        direction: out
+        optional: false
+        description: 控制字1（QW.10，bit3 释放位恒置 1）
+      - name: dpOut_Ctrl2
+        pin_type: DintIO
+        direction: out
+        optional: false
+        description: 控制字2（QW.11，标定命令）
+      - name: dpOut_FlowSet
+        pin_type: RealIO
+        direction: out
+        optional: true
+        description: 流量设定值（QW.12）
+      - name: dpOut_Spare0
+        pin_type: DintIO
+        direction: out
+        optional: true
+        description: 输出预留（QW.8）
+      - name: dpOut_Spare1
+        pin_type: DintIO
+        direction: out
+        optional: true
+        description: 输出预留（QW.9）
+      - name: dpOut_Spare5
+        pin_type: DintIO
+        direction: out
+        optional: true
+        description: 输出预留（QW.13）
+      - name: dpOut_Spare6
+        pin_type: DintIO
+        direction: out
+        optional: true
+        description: 输出预留（QW.14）
+      - name: dpOut_Spare7
+        pin_type: DintIO
+        direction: out
+        optional: true
+        description: 输出预留（QW.15）
+      - name: Running
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行（状态字1 bit0，TOf 1s 滤波）
+      - name: Heavy_Alarm
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 重报警（状态字1 bit5，TOf 1s 滤波，AlarmCond 800）
+      - name: Warning
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 警告（TOf 1s 滤波，AlarmCond 500）
+      - name: No_Release
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 无释放信号（状态字1 bit1，AlarmCond 500）
+      - name: Batch_Selected
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 批量已选择（状态字反馈）
+      - name: Batch_Active
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 批量激活（事件记录）
+      - name: Cal_Running
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 标定运行（事件记录）
+      - name: Flow_Upper_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 流量超上限（画面指示灯，非 AlarmCond）
+      - name: Flow_Lower_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 流量低于下限（指示灯）
+      - name: Load_Upper_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 皮带负荷超上限（指示灯）
+      - name: Load_Lower_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 皮带负荷低于下限（指示灯）
+      - name: Speed_Upper_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 皮带速度超上限（指示灯）
+      - name: Speed_Lower_Limit
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 皮带速度低于下限（指示灯）
+    params: {}
+
+  KDMC2880:
+    comment: |
+      大布袋收尘器（KDMC2880，16-bit GSD 模块 → DwordIO → STRUCT 路线）。
+      要点：.Value 返回 DWord，需 DWORD_TO_DINT/DINT_TO_DWORD 转换；位解包用
+      (val/位值) MOD 2；报警用 AlarmCond、事件用 SimpleEventDetector；
+      结构体在 Data Type Editor 中表格导入创建（禁止 ST 定义）。
+      字段 DP_IN.wStatus / DP_IN.iChamberNo / DP_OUT.wCtrl 为文档明确。
+    source: 来源：大布袋_功能块开发规则1.md
+    pins:
+      - name: DP_IN
+        pin_type: KDMC2880_IN
+        direction: in_out
+        optional: false
+        description: DP 输入结构体（字段 wStatus=DwordIO、iChamberNo=DintIO 等）
+      - name: DP_OUT
+        pin_type: KDMC2880_OUT
+        direction: in_out
+        optional: false
+        description: DP 输出结构体（字段 wCtrl=DwordIO 等）
+      - name: DCS_Start
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动命令（wCtrl bit0 打包）
+      - name: DCS_FeedMode
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 进料模式（wCtrl bit1 打包）
+      - name: DCS_Ready
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 就绪（wStatus bit0 解包）
+      - name: DCS_RunNet
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 网络运行（wStatus bit1 解包）
+      - name: DCS_RunHard
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 硬接线运行（wStatus bit2 解包）
+      - name: DCS_Running
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 运行（wStatus bit5 解包）
+      - name: DCS_ChamberNo
+        pin_type: int
+        direction: out
+        optional: true
+        description: 仓号（iChamberNo，.Value 读取）
+      - name: DCS_GenFault
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 综合故障（AlarmCond 报警信号源）
+    params: {}
+
+  HAVER:
+    comment: |
+      包装机（Haver Roto-Packer，Deutschmann UNIGATE IC，Ident 0x3218，
+      Module 9/10 "122 Worte" → 16-bit DwordIO → STRUCT 路线，Big-Endian）。
+      要点：STRUCT 命名 HAVER_IN/HAVER_OUT（122 字段 w0-w121）；每设备占
+      4 字节（Status0+Status1 + Alarm）；批次状态字 Word111、已送包数
+      Word112、输出控制字 Word1、输出数据 Word0-4；心跳接收 1.6s 脉冲
+      （BIT222.7）+ 发送 ~2s 振荡（BIT2.7）；Reset/Start 用 TP 3s 脉冲；
+      心跳监测 R_Trig + TOf 5s 超时；14 台设备共 75 个报警位（每报警位
+      一个 AlarmCond，不逐位列管脚）；alarm word > 0 即设备故障。
+    source: 来源：包装机_开发规则.md
+    pins:
+      - name: HAVER_IN
+        pin_type: HAVER_IN
+        direction: in_out
+        optional: false
+        description: DP 输入结构体（122 字段 w0-w121，DwordIO，Big-Endian）
+      - name: HAVER_OUT
+        pin_type: HAVER_OUT
+        direction: in_out
+        optional: false
+        description: DP 输出结构体（122 字段 w0-w121，DwordIO）
+      - name: Cmd_Reset
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 复位命令（TP 3s 脉冲）
+      - name: Cmd_Start
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动命令（TP 3s 脉冲）
+      - name: Heartbeat_ok
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 心跳正常（R_Trig 上升沿 + TOf 5s 超时监测）
+      - name: BatchStatus
+        pin_type: int
+        direction: out
+        optional: true
+        description: 批次状态字（Word111，BYTE222）
+      - name: BagsSent
+        pin_type: int
+        direction: out
+        optional: true
+        description: 已送包数（Word112，BYTE224-225）
+      - name: DeviceFault
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 设备故障（alarm word > 0）
+    params: {}
+
+  # ---------------------------------------------------------------
+  # 三、通用标准功能块（ABB_800XA_DP功能块开发规则 明确引脚名）
+  # ---------------------------------------------------------------
+
+  RS:
+    comment: 复位优先锁存器。复位引脚是 R1（不是 Reset1）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Set
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 置位输入
+      - name: R1
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 复位输入（注意不是 Reset1）
+      - name: Q1
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 锁存输出
+    params: {}
+
+  SR:
+    comment: 置位优先锁存器。复位引脚是 Reset（不是 R1）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: S1
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 置位输入
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 复位输入（注意不是 R1）
+      - name: Q1
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 锁存输出
+    params: {}
+
+  TOn:
+    comment: 通电延时定时器。输入引脚是 In（首字母大写，不是 IN）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: In
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 启动输入
+      - name: PT
+        pin_type: time
+        direction: in
+        optional: false
+        description: 延时预设值
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 延时输出
+    params: {}
+
+  TOf:
+    comment: 断电延时定时器。用于信号滤波/防抖动/安全锁延时。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: In
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 输入（信号消失后延时翻转）
+      - name: PT
+        pin_type: time
+        direction: in
+        optional: false
+        description: 延时预设值
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 延时输出
+    params: {}
+
+  TP:
+    comment: 脉冲定时器。用于 Start/Stop/Reset 命令生成固定宽度脉冲。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: In
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 触发输入
+      - name: PT
+        pin_type: time
+        direction: in
+        optional: false
+        description: 脉冲宽度
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 脉冲输出
+    params: {}
+
+  R_Trig:
+    comment: 上升沿触发。输入引脚是 Clk（不是 IN）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Clk
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 时钟输入（上升沿触发）
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 单周期脉冲输出
+    params: {}
+
+  F_Trig:
+    comment: 下降沿触发。输入引脚是 Clk（不是 IN）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Clk
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 时钟输入（下降沿触发）
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: false
+        description: 单周期脉冲输出
+    params: {}
+
+  CTU:
+    comment: 加计数器。参数 CU/RESET/PV 为文档明确，Q 输出为标准计数语义推断。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: CU
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 计数脉冲输入
+      - name: RESET
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 复位输入
+      - name: PV
+        pin_type: int
+        direction: in
+        optional: false
+        description: 预设值（计数到 PV 输出）
+      - name: Q
+        pin_type: bool
+        direction: out
+        optional: true
+        description: 计数到达输出（推断）
+    params: {}
+
+  AlarmCond:
+    comment: 报警条件块。Severity 800=重报警/500=警告；不支持 CondName 参数。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Signal
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 报警信号（条件满足报警）
+      - name: Message
+        pin_type: string
+        direction: in
+        optional: false
+        description: 报警消息（Var 表字符串变量）
+      - name: Severity
+        pin_type: int
+        direction: in
+        optional: false
+        description: 严重程度（800 重报警 / 500 警告）
+      - name: SrcName
+        pin_type: string
+        direction: in
+        optional: false
+        description: 报警源名称
+      - name: EnDetection
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 检测使能
+    params: {}
+
+  SimpleEventDetector:
+    comment: 事件检测。内部自动检测上升沿；停止事件需手动反逻辑
+      （Signal := (NOT Running) AND prev_running，prev_running 在代码末尾更新）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Signal
+        pin_type: bool
+        direction: in
+        optional: false
+        description: 事件信号（上升沿记录事件）
+      - name: Message
+        pin_type: string
+        direction: in
+        optional: false
+        description: 事件消息
+    params: {}
+
+  TimerU:
+    comment: 运行时间计时器。参数 Hold/Reset/PT/ST/PTChRst 为文档明确。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md
+    pins:
+      - name: Hold
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 保持计时
+      - name: Reset
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 复位
+      - name: PT
+        pin_type: time
+        direction: in
+        optional: true
+        description: 预设时间
+      - name: ST
+        pin_type: time
+        direction: in
+        optional: true
+        description: 设定时间
+      - name: PTChRst
+        pin_type: bool
+        direction: in
+        optional: true
+        description: 预设值复位
+    params: {}
+
+  Dint_bool16:
+    comment: TAYNINH 库自定义：DINT → 16 个独立 bool（与标准 DINTTOBOOL16 不同，
+      标准输出为 BoolStruct+Status，本类型输出 16 个独立 bool，无 _STA 变量）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md / 中压变频器_FB开发规则2.md
+    pins:
+      - name: in
+        pin_type: dint
+        direction: in
+        optional: false
+        description: DINT 输入
+      - name: bool0
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit0
+      - name: bool1
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit1
+      - name: bool2
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit2
+      - name: bool3
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit3
+      - name: bool4
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit4
+      - name: bool5
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit5
+      - name: bool6
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit6
+      - name: bool7
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit7
+      - name: bool8
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit8
+      - name: bool9
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit9
+      - name: bool10
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit10
+      - name: bool11
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit11
+      - name: bool12
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit12
+      - name: bool13
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit13
+      - name: bool14
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit14
+      - name: bool15
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit15
+    params: {}
+
+  BOOL16_DINT:
+    comment: TAYNINH 库自定义：16 个独立 bool → DINT（与标准 BOOL16TODINT 不同）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md / 中压变频器_FB开发规则2.md
+    pins:
+      - name: IN0
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit0
+      - name: IN1
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit1
+      - name: IN2
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit2
+      - name: IN3
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit3
+      - name: IN4
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit4
+      - name: IN5
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit5
+      - name: IN6
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit6
+      - name: IN7
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit7
+      - name: IN8
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit8
+      - name: IN9
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit9
+      - name: IN10
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit10
+      - name: IN11
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit11
+      - name: IN12
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit12
+      - name: IN13
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit13
+      - name: IN14
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit14
+      - name: IN15
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit15
+      - name: OUT
+        pin_type: dint
+        direction: out
+        optional: false
+        description: DINT 输出
+    params: {}
+
+  Dint_bool32:
+    comment: TAYNINH 库自定义 32 位版：DINT → 32 个独立 bool（bool0~bool31）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md / 中压变频器_FB开发规则2.md
+    pins:
+      - name: in
+        pin_type: dint
+        direction: in
+        optional: false
+        description: DINT 输入
+      - name: bool0
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit0
+      - name: bool1
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit1
+      - name: bool2
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit2
+      - name: bool3
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit3
+      - name: bool4
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit4
+      - name: bool5
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit5
+      - name: bool6
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit6
+      - name: bool7
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit7
+      - name: bool8
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit8
+      - name: bool9
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit9
+      - name: bool10
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit10
+      - name: bool11
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit11
+      - name: bool12
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit12
+      - name: bool13
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit13
+      - name: bool14
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit14
+      - name: bool15
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit15
+      - name: bool16
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit16
+      - name: bool17
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit17
+      - name: bool18
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit18
+      - name: bool19
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit19
+      - name: bool20
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit20
+      - name: bool21
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit21
+      - name: bool22
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit22
+      - name: bool23
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit23
+      - name: bool24
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit24
+      - name: bool25
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit25
+      - name: bool26
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit26
+      - name: bool27
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit27
+      - name: bool28
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit28
+      - name: bool29
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit29
+      - name: bool30
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit30
+      - name: bool31
+        pin_type: bool
+        direction: out
+        optional: true
+        description: bit31
+    params: {}
+
+  BOOL32_DINT:
+    comment: TAYNINH 库自定义 32 位版：32 个独立 bool → DINT（IN0~IN31）。
+    source: 来源：ABB_800XA_DP功能块开发规则_20260715_2240.md / 中压变频器_FB开发规则2.md
+    pins:
+      - name: IN0
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit0
+      - name: IN1
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit1
+      - name: IN2
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit2
+      - name: IN3
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit3
+      - name: IN4
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit4
+      - name: IN5
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit5
+      - name: IN6
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit6
+      - name: IN7
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit7
+      - name: IN8
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit8
+      - name: IN9
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit9
+      - name: IN10
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit10
+      - name: IN11
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit11
+      - name: IN12
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit12
+      - name: IN13
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit13
+      - name: IN14
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit14
+      - name: IN15
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit15
+      - name: IN16
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit16
+      - name: IN17
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit17
+      - name: IN18
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit18
+      - name: IN19
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit19
+      - name: IN20
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit20
+      - name: IN21
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit21
+      - name: IN22
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit22
+      - name: IN23
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit23
+      - name: IN24
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit24
+      - name: IN25
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit25
+      - name: IN26
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit26
+      - name: IN27
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit27
+      - name: IN28
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit28
+      - name: IN29
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit29
+      - name: IN30
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit30
+      - name: IN31
+        pin_type: bool
+        direction: in
+        optional: true
+        description: bit31
+      - name: OUT
+        pin_type: dint
+        direction: out
+        optional: false
+        description: DINT 输出
+    params: {}

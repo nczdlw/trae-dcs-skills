@@ -1,0 +1,181 @@
+# 西门子 SIMATIC PCS7 IO 表格模板（草案）
+# 输入侧为 IR 点位表标准列；导入侧为 CFC/WinCC 变量表草案列，
+# PCS7 官方列格式尚未核实，草案列全部标注「待核实」，核实后替换。
+
+template_name: pcs7_io_template
+platform: pcs7
+description: >-
+  西门子 SIMATIC PCS7（CFC 连续功能图 / WinCC 变量表）IO 表格模板草案。
+  输入侧列与 IR 点位表（dcsaf/ir/point_table.py）字段一一对应；
+  导入侧为草案列，官方格式标注「待核实」。
+
+columns:
+  # ---------- IO 输入侧（IR 点位表标准列） ----------
+  - name: 序号
+    group: io
+    required: true
+    ir_field: null
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 行号/序号，用于错误定位与结果回写原表。
+
+  - name: 位号
+    group: io
+    required: true
+    ir_field: tag
+    source: "来源：IR 模型（point_table.py）"
+    description: 信号位号（IR 唯一键）。
+
+  - name: 描述
+    group: io
+    required: true
+    ir_field: description
+    source: "来源：IR 模型（point_table.py）"
+    description: 信号描述。
+
+  - name: 信号类型
+    group: io
+    required: true
+    ir_field: signal_type
+    source: "来源：IR 模型（point_table.py）；57E_IO点表核对方法论与经验教训总结.md（信号类型 DI/DO/AI/AO）"
+    description: DI/DO/AI/AO 四类。AI/AO 必填量程与单位。
+
+  - name: 量程下限
+    group: io
+    required: false
+    ir_field: range_low
+    source: "来源：IR 模型（point_table.py）"
+    description: 模拟量量程下限，AI/AO 必填。
+
+  - name: 量程上限
+    group: io
+    required: false
+    ir_field: range_high
+    source: "来源：IR 模型（point_table.py）"
+    description: 模拟量量程上限，AI/AO 必填。
+
+  - name: 单位
+    group: io
+    required: false
+    ir_field: unit
+    source: "来源：IR 模型（point_table.py）"
+    description: 工程单位。
+
+  - name: 报警下限
+    group: io
+    required: false
+    ir_field: alarm_low
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 模拟量报警下限，需在量程内。
+
+  - name: 报警上限
+    group: io
+    required: false
+    ir_field: alarm_high
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 模拟量报警上限，需在量程内。
+
+  - name: 系统分组
+    group: io
+    required: false
+    ir_field: system_group
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 系统分组，用于 PCS7 功能块分组/层级组织。
+
+  - name: 连锁关联
+    group: io
+    required: false
+    ir_field: interlock_ref
+    source: "来源：IR 模型（point_table.py）推断"
+    description: 关联连锁引用，多值用逗号分隔。
+
+  - name: DP设备
+    group: io
+    required: false
+    ir_field: dp.device
+    source: "来源：IR 模型（point_table.py dp 字段）推断"
+    description: DP 通讯设备名（仅 DP 通讯点）。
+
+  - name: DP槽位
+    group: io
+    required: false
+    ir_field: dp.slot
+    source: "来源：IR 模型（point_table.py dp 字段）推断"
+    description: DP 站内槽位号。
+
+  - name: 字节序
+    group: io
+    required: false
+    ir_field: dp.byte_order
+    source: "来源：IR 模型（point_table.py dp 字段）推断"
+    description: DP 字节序 low_high / high_low / none。
+
+  # ---------- 导入侧：PCS7 草案列（官方格式待核实） ----------
+  - name: PCS7.CFC块名
+    group: import
+    required: true
+    ir_field: tag
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。CFC 连续功能图块实例名（草案：取位号工程化形式）。
+
+  - name: PCS7.块类型
+    group: import
+    required: true
+    ir_field: null
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。PCS7 块类型（如 Channel Driver 驱动块、MOTOR/阀门/模拟量监视逻辑块）。
+
+  - name: PCS7.WinCC变量名
+    group: import
+    required: false
+    ir_field: tag
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。WinCC 画面/归档变量名。
+
+  - name: PCS7.数据类型
+    group: import
+    required: true
+    ir_field: signal_type
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。数据类型（BOOL/REAL/INT/DWORD 等），由 IR signal_type 派生。
+
+  - name: PCS7.I/O地址
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。模块/通道地址（如 IW x.y / Q x.y）。
+
+  - name: PCS7.初始值
+    group: import
+    required: false
+    ir_field: null
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。变量初始值。
+
+  - name: PCS7.报警下限
+    group: import
+    required: false
+    ir_field: alarm_low
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。WinCC 报警下限组态。
+
+  - name: PCS7.报警上限
+    group: import
+    required: false
+    ir_field: alarm_high
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。WinCC 报警上限组态。
+
+  - name: PCS7.说明
+    group: import
+    required: false
+    ir_field: description
+    source: "来源：平台惯例推断，官方列格式待核实"
+    description: 待核实。块/变量说明。
+
+export_format:
+  platform_note: >-
+    SIMATIC PCS7：CFC（连续功能图）组态 + WinCC 变量表/报警组态。
+    官方批量导入表列格式未核实，本模板导入侧列均为草案，待核实后替换。
+  file_format: 待核实（xlsx/CSV 及表头结构）。
+  import_order: 待核实。

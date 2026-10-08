@@ -1,0 +1,247 @@
+# =============================================================================
+# 西门子 SIMATIC PCS7 功能块库（草案，官方库待核实）
+#
+# PCS7 组态以 CFC（Continuous Function Chart）为主，底层基于 STEP7 标准库
+# （IEC 61131-3 逻辑/定时器/计数器 + S7 系统功能块）。以下为通用集合草案，
+# 类型名与管脚以西门子官方库（PCS7 V9 及 STEP7 标准库）为准，逐项标注"待核实"。
+#
+# 约束：本文件为草案，所有条目 source 标注"待核实"；官方库核实后替换。
+# =============================================================================
+library: PCS7
+platform: 西门子 SIMATIC PCS7（CFC 基于 STEP7，IEC 61131-3）
+comment: |
+  PCS7 功能块库草案（CFC 编程）。
+  官方功能块库待核实；以下为通用 IEC 61131-3 逻辑/定时器/计数器/运算集合
+  与 S7 常用系统功能块草案，所有条目均标注"待核实"。
+
+fbs:
+  AND:
+    comment: 逻辑与门（多个输入，1 个输出）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（全部输入为真时输出真）}
+    params: {}
+
+  OR:
+    comment: 逻辑或门。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（任一输入为真时输出真）}
+    params: {}
+
+  NOT:
+    comment: 逻辑非门。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 输入}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（取反）}
+    params: {}
+
+  XOR:
+    comment: 逻辑异或门。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN1, pin_type: bool, direction: in, optional: false, description: 输入1}
+      - {name: IN2, pin_type: bool, direction: in, optional: false, description: 输入2}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 输出（输入不同时输出真）}
+    params: {}
+
+  RS:
+    comment: 复位优先锁存器（IEC 命名 S/R1）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: S, pin_type: bool, direction: in, optional: false, description: 置位输入}
+      - {name: R1, pin_type: bool, direction: in, optional: false, description: 复位输入（复位优先）}
+      - {name: Q1, pin_type: bool, direction: out, optional: false, description: 锁存输出}
+    params: {}
+
+  SR:
+    comment: 置位优先锁存器（IEC 命名 S1/R）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: S1, pin_type: bool, direction: in, optional: false, description: 置位输入（置位优先）}
+      - {name: R, pin_type: bool, direction: in, optional: false, description: 复位输入}
+      - {name: Q1, pin_type: bool, direction: out, optional: false, description: 锁存输出}
+    params: {}
+
+  TON:
+    comment: 通电延时定时器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 启动输入}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 延时预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 延时输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时（剩余/已用时间）}
+    params: {}
+
+  TOF:
+    comment: 断电延时定时器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 输入（信号消失后延时翻转）}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 延时预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 延时输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时}
+    params: {}
+
+  TP:
+    comment: 脉冲定时器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: IN, pin_type: bool, direction: in, optional: false, description: 触发输入}
+      - {name: PT, pin_type: time, direction: in, optional: false, description: 脉冲宽度}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 脉冲输出}
+      - {name: ET, pin_type: time, direction: out, optional: true, description: 已计时}
+    params: {}
+
+  CTU:
+    comment: 加计数器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: CU, pin_type: bool, direction: in, optional: false, description: 计数脉冲输入}
+      - {name: R, pin_type: bool, direction: in, optional: false, description: 复位}
+      - {name: PV, pin_type: int, direction: in, optional: false, description: 预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 计数到达输出}
+      - {name: CV, pin_type: int, direction: out, optional: true, description: 当前计数值}
+    params: {}
+
+  CTD:
+    comment: 减计数器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: CD, pin_type: bool, direction: in, optional: false, description: 计数脉冲输入}
+      - {name: LD, pin_type: bool, direction: in, optional: false, description: 装载预设值}
+      - {name: PV, pin_type: int, direction: in, optional: false, description: 预设值}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 计数到达零输出}
+      - {name: CV, pin_type: int, direction: out, optional: true, description: 当前计数值}
+    params: {}
+
+  CTUD:
+    comment: 加减计数器（IEC 命名）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，IEC 61131-3 通用草案）
+    pins:
+      - {name: CU, pin_type: bool, direction: in, optional: false, description: 加计数脉冲}
+      - {name: CD, pin_type: bool, direction: in, optional: false, description: 减计数脉冲}
+      - {name: R, pin_type: bool, direction: in, optional: false, description: 复位}
+      - {name: LD, pin_type: bool, direction: in, optional: false, description: 装载预设值}
+      - {name: PV, pin_type: int, direction: in, optional: false, description: 预设值}
+      - {name: QU, pin_type: bool, direction: out, optional: false, description: 上限输出}
+      - {name: QD, pin_type: bool, direction: out, optional: false, description: 下限输出}
+      - {name: CV, pin_type: int, direction: out, optional: true, description: 当前计数值}
+    params: {}
+
+  ADD_R:
+    comment: 实数加法运算。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 算术功能草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被加数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 加数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 和}
+    params: {}
+
+  SUB_R:
+    comment: 实数减法运算。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 算术功能草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被减数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 减数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 差}
+    params: {}
+
+  MUL_R:
+    comment: 实数乘法运算。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 算术功能草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 乘数1}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 乘数2}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 积}
+    params: {}
+
+  DIV_R:
+    comment: 实数除法运算。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 算术功能草案）
+    pins:
+      - {name: IN1, pin_type: real, direction: in, optional: false, description: 被除数}
+      - {name: IN2, pin_type: real, direction: in, optional: false, description: 除数}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 商}
+    params: {}
+
+  LATCH_M:
+    comment: 电机锁存控制（S7 标准库电机典型回路草案：命令/反馈/故障）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 电机控制草案）
+    pins:
+      - {name: ON_CMD, pin_type: bool, direction: in, optional: false, description: 启动命令}
+      - {name: OFF_CMD, pin_type: bool, direction: in, optional: false, description: 停止命令}
+      - {name: FAULT, pin_type: bool, direction: in, optional: false, description: 故障输入}
+      - {name: RUN_FB, pin_type: bool, direction: in, optional: true, description: 运行反馈}
+      - {name: OUT, pin_type: bool, direction: out, optional: false, description: 驱动输出}
+      - {name: FAULT_OUT, pin_type: bool, direction: out, optional: false, description: 故障输出}
+    params: {}
+
+  PULSEGEN:
+    comment: 脉冲发生器（S7 系统功能块草案，生成可配置宽度/周期的脉冲串）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 系统功能草案）
+    pins:
+      - {name: ENABLE, pin_type: bool, direction: in, optional: false, description: 使能}
+      - {name: PULSE, pin_type: bool, direction: out, optional: false, description: 脉冲输出}
+    params:
+      PULSE_WIDTH: {type: time, description: 脉冲宽度（草案参数）}
+      PERIOD:      {type: time, description: 脉冲周期（草案参数）}
+
+  MONITOR:
+    comment: 信号监视（S7 监视功能草案：输入超上下限输出状态）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 监视功能草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 被监视信号}
+      - {name: Q, pin_type: bool, direction: out, optional: false, description: 越限输出}
+    params:
+      HIGH_LIMIT: {type: real, description: 上限（草案参数）}
+      LOW_LIMIT:  {type: real, description: 下限（草案参数）}
+
+  LIMIT:
+    comment: 限幅（S7 限幅功能草案：输出限制在上下限之间）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 限幅功能草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 输入}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 限幅输出}
+    params:
+      HIGH_LIMIT: {type: real, description: 上限（草案参数）}
+      LOW_LIMIT:  {type: real, description: 下限（草案参数）}
+
+  DEADBAND:
+    comment: 死区（S7 死区功能草案：输入在死区内输出 0）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 死区功能草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 输入}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 输出}
+    params:
+      BAND_WIDTH: {type: real, description: 死区宽度（草案参数）}
+
+  RAMP:
+    comment: 斜坡（S7 斜坡功能草案：输出按斜率逼近输入）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，S7 斜坡功能草案）
+    pins:
+      - {name: IN, pin_type: real, direction: in, optional: false, description: 目标值}
+      - {name: OUT, pin_type: real, direction: out, optional: false, description: 斜坡输出}
+    params:
+      RAMP_UP:   {type: real, description: 上升斜率（草案参数）}
+      RAMP_DOWN: {type: real, description: 下降斜率（草案参数）}
+
+  PID_CP:
+    comment: PID 控制器（PCS7 连续 PID 草案：PCS7 标准 PID 类型名待核实）。待核实。
+    source: 待核实（PCS7/STEP7 官方库未核实，PCS7 PID 草案）
+    pins:
+      - {name: PV_IN, pin_type: real, direction: in, optional: false, description: 过程值输入}
+      - {name: SP_INT, pin_type: real, direction: in, optional: false, description: 内部设定值}
+      - {name: MAN_ON, pin_type: bool, direction: in, optional: true, description: 手动模式切换}
+      - {name: LMN, pin_type: real, direction: out, optional: false, description: 控制输出（0~100%）}
+    params:
+      GAIN:     {type: real, description: 比例增益（草案参数）}
+      TI:       {type: time, description: 积分时间（草案参数）}
+      TD:       {type: time, description: 微分时间（草案参数）}
+      LMN_HLM:  {type: real, description: 输出上限（草案参数）}
+      LMN_LLM:  {type: real, description: 输出下限（草案参数）}
