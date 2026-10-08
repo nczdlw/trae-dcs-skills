@@ -1,0 +1,247 @@
+name: e2e_pilot
+fbs:
+- ftype: SignalInReal
+  instance: SI_FRQ
+  pins:
+  - name: Name
+    pin_type: string
+    direction: in
+    value: MV_VFD_FREQ
+    source: null
+  - name: In
+    pin_type: RealIO
+    direction: in_out
+    value: null
+    source: N562_MVVVF_FRQ
+  params:
+    LevelH: 45.0
+    LevelHH: 48.0
+    EnableL: false
+    EnableLL: false
+    EnableLLL: false
+  comment: 中压变频器频率监测（示例）
+- ftype: SignalInReal
+  instance: SI_DP
+  pins:
+  - name: Name
+    pin_type: string
+    direction: in
+    value: BAG_DP_ALARM
+    source: null
+  - name: In
+    pin_type: RealIO
+    direction: in_out
+    value: null
+    source: N562_BAG_DP
+  params:
+    LevelH: 3.5
+    LevelHH: 4.0
+    EnableL: false
+    EnableLL: false
+    EnableLLL: false
+  comment: 大布袋差压监测（示例）
+- ftype: RS
+  instance: RS_ILK
+  pins:
+  - name: Set
+    pin_type: bool
+    direction: in
+    value: null
+    source: SI_DP.GTHHStat
+  - name: R1
+    pin_type: bool
+    direction: in
+    value: null
+    source: N562_BAG_DP_RST
+  - name: Q1
+    pin_type: bool
+    direction: out
+    value: null
+    source: null
+  params: {}
+  comment: 差压高连锁锁存（示例：差压 HH 锁停引风机，复位按钮释放）
+- ftype: MOTOR1
+  instance: MOT1
+  pins:
+  - name: Ready
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: Running
+    pin_type: bool
+    direction: in
+    value: null
+    source: N562_BAG_FAN_RUN
+  - name: Emg_stop
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: start_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: process_lock
+    pin_type: bool
+    direction: in
+    value: null
+    source: RS_ILK.Q1
+  - name: safety_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: Drive
+    pin_type: bool
+    direction: out
+    value: null
+    source: N562_BAG_FAN_START
+  params: {}
+  comment: 大布袋引风机电机启停控制（示例）
+- ftype: RS
+  instance: RS_DRV
+  pins:
+  - name: Set
+    pin_type: bool
+    direction: in
+    value: null
+    source: MOT1.Running
+  - name: R1
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: Q1
+    pin_type: bool
+    direction: out
+    value: null
+    source: null
+  params: {}
+  comment: VFD 驱动命令锁存（示例简化：R1 接 FALSE，实际接停止条件）
+- ftype: SMOTOR_PROV
+  instance: SM_DP
+  pins:
+  - name: Group_start
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: Start_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: process_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: safety_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: Emg_stop
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: StatusWord
+    pin_type: DintIO
+    direction: in
+    value: null
+    source: N562_DP_MOTOR_SW
+  - name: ControlWord
+    pin_type: DintIO
+    direction: out
+    value: null
+    source: N562_DP_MOTOR_CW
+  params: {}
+  comment: DP 通讯电机控制（示例）
+- ftype: ABBMVVVF
+  instance: VFD_CTL
+  pins:
+  - name: Group_start
+    pin_type: bool
+    direction: in
+    value: null
+    source: RS_DRV.Q1
+  - name: Start_lock
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: start_lock_en
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: READY1
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: EMG_stop
+    pin_type: bool
+    direction: in
+    value: 'FALSE'
+    source: null
+  - name: process_lock
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: safe_lock
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: safe_lock_en
+    pin_type: bool
+    direction: in
+    value: 'TRUE'
+    source: null
+  - name: Freq_Max
+    pin_type: real
+    direction: in
+    value: '50.0'
+    source: null
+  - name: Frq_min
+    pin_type: real
+    direction: in
+    value: '5.0'
+    source: null
+  - name: run_time
+    pin_type: time
+    direction: in
+    value: T#10S
+    source: null
+  - name: ES_TIME
+    pin_type: time
+    direction: in
+    value: T#1S
+    source: null
+  - name: safe_lock_time
+    pin_type: time
+    direction: in
+    value: T#2S
+    source: null
+  - name: temp_Limit
+    pin_type: real
+    direction: in
+    value: '120.0'
+    source: null
+  - name: INPUTDINT1
+    pin_type: dint
+    direction: in
+    value: null
+    source: N562_MVVVF_SW
+  - name: INPUTDINT2
+    pin_type: dint
+    direction: in
+    value: null
+    source: N562_MVVVF_FRQ
+  params: {}
+  comment: 中压变频器控制（示例；输出管脚按示例简化未列）
