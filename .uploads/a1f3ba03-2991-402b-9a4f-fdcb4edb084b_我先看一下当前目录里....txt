@@ -1,0 +1,268 @@
+我先看一下当前目录里有什么内容，确认您指的是哪份开发计划。
+The user asks to "evaluate the reasonableness and feasibility of a development plan, point out deficiencies", but I don't see any development plan file or content in the current conversation. The user didn't specify which development plan to evaluate.
+
+The current working directory is d:\MiniLangGraph. Let me first look at what's in this directory to see if there's a development plan file.
+
+According to the user's rule 5: when the user's requirement expression is vague, proactively ask questions to confirm. But if there's an obvious development plan file in the directory, I can find it first.
+
+Let me first check the directory structure.
+
+找到了开发计划文件，我来读取并评估。
+There's a development plan file: 本地简化版LangGraph工作流引擎开发计划.md. Let me read it.
+
+这是个评估分析任务（单文件、纯分析），不涉及多步骤执行，我先做几项事实核验再给结论。
+用户让我评估这份开发计划的合理性和可行性，指出不足。
+
+这是一个评估任务，不是复杂的多步骤执行任务（不需要建任务树——评估一份文档是一个分析任务，不是≥3步骤的逐页/逐组处理任务。不过让我想想：这是一个单文件分析任务，输出评估意见。不需要建任务树）。
+
+用户规则：
+1. 信息边界：不确定的直接说不知道，禁止猜测
+2. 信息溯源：数字、日期等要有来源
+3. 通俗直白
+4. 先结论后理由
+5. 需求确认——这里用户需求明确：评估计划，指出不足
+6. 强制任务树——复杂任务（≥3步骤或≥2输入文件）。这个任务是评估单个文件，1个输入文件，属于分析任务而非逐页处理任务。我认为不需要建任务树。这是单文件评估，产出一段评估意见。
+7. 经验知识库——新任务开工建树前先读 D:\trae-dcs-skills\knowledge\INDEX.md 检索同类经验。计划里提到已查过 INDEX.md（70类编排器-工作者模式调研报告）。我评估计划本身，可以参考那个调研报告来验证计划的说法是否属实。让我快速检查一下。
+
+计划中提到：
+- `knowledge/INDEX.md` → 70 类《编排器-工作者模式调研报告》（含 LangGraph supervisor 一节）
+- 工作区 `/workspace` 是文档/知识库型仓库
+- 沙箱 Python 3.14.7 可用
+
+这些是计划里的声明。我应该验证一下（信息溯源原则）。但注意：当前工作目录是 d:\MiniLangGraph，计划里说落盘在 /workspace/minigraph/。这个 /workspace 路径很可疑——当前是 Windows 机器（d:\MiniLangGraph），计划里写的 /workspace/ 是 Linux 风格路径。这可能是计划是在某个沙箱环境里生成的，或者路径不对。
+
+关键疑点：
+1. 路径问题：计划说 `/workspace/minigraph/`，但当前目录是 `d:\MiniLangGraph`，Windows 系统。`/workspace` 在 Windows 上不存在（除非是 WSL 或沙箱）。这是计划与实际环境的重大不一致。
+   - 计划还说"可直接拷到本地 Windows 机器运行"——说明计划写的时候是在一个沙箱（/workspace），而实际执行环境是 Windows d:\MiniLangGraph。
+   - 验证步骤写 `python3 -m unittest discover minigraph/tests -v`——Windows 上通常是 `python` 而非 `python3`，而且 discover 路径写法 `minigraph/tests` 是把 tests 放在包内？目录结构里 tests 在 minigraph/ 包外面（/workspace/minigraph/tests/），而 discover 命令写 `minigraph/tests`，路径层级混乱。实际结构是 /workspace/minigraph/{minigraph/, examples/, tests/}，所以 discover 应该是 `python -m unittest discover tests`（cwd 为 /workspace/minigraph）或者 `discover -s tests`。写 `minigraph/tests` 是错的——tests 不在 minigraph 包内。这是一个具体错误。
+   
+2. Python 版本声明：计划说 Python 3.10+，沙箱是 3.14.7。当前 Windows 机器的 Python 版本未验证。我应该检查一下本机 Python 版本是否满足 3.10+。让我验证。
+
+3. 计划提到"用户已确认""用户授权推荐"——这些上下文我无法验证，但作为计划的前提声明可以接受。
+
+4. 计划提到 knowledge/INDEX.md 在 70 类有调研报告。当前目录 d:\MiniLangGraph 只有一个 md 文件，没有 knowledge 目录。用户规则 7 说经验库在 D:\trae-dcs-skills。让我检查 D:\trae-dcs-skills\knowledge\INDEX.md 是否存在以及 70 类内容，验证计划引用的经验是否真实存在。
+
+让我做几个验证：
+- 检查本机 Python 版本
+- 检查 D:\trae-dcs-skills\knowledge\INDEX.md 的 70 类
+- 检查 /workspace 是否存在（大概率不存在，Windows 上）
+
+评估计划本身的技术合理性：
+
+优点（合理性）：
+1. 范围裁剪明确——"明确不做"清单很清楚（异步、Pregel并行、子图、LLM绑定），这是好的范围控制
+2. 模块划分合理——state/graph/engine/checkpoint/loader/cli/errors 职责清晰
+3. 对照表写进 docstring，降低学习成本
+4. max_steps 防死循环，吸收了调研报告的教训
+5. 检查点用 JSON 人可读
+6. 验证步骤具体可操作（三个example + CLI 冒烟 + 检查点抽查）
+
+不足/风险：
+
+A. 环境与路径不一致（重大）：
+- 计划通篇用 `/workspace/` Linux 路径，且说"沙箱 Python 3.14.7"——但实际执行环境是 Windows d:\MiniLangGraph。计划没有更新到实际环境。落盘路径、验证命令都需要本地化。
+- `python3` 在 Windows 上通常不可用（要用 `python` 或 `py`）。
+
+B. 验证命令错误：
+- `python3 -m unittest discover minigraph/tests -v`：tests 目录不在 minigraph 包内（结构上是 minigraph/tests 与 minigraph/ 平级），discover 路径写错。应为 `python -m unittest discover -s tests -v`（在项目根运行）。
+- 而且 tests 里没有 __init__.py 的话 discover 用 start_dir 直接指也行，但写法得对。
+
+C. 技术设计上的遗漏/含糊点：
+1. **checkpoint 的原子性**：每步写 JSON，如果进程在写到一半时挂掉，JSON 损坏，resume 会失败。没提写临时文件再 rename 的原子写策略。对"断点续跑"这个核心卖点来说，这是实质缺陷。
+2. **条件路由返回未知键的处理**：router 返回 mapping 之外的键怎么办？计划没写（应抛 GraphError）。
+3. **中断恢复的语义**：`interrupt_after` 的检查点存的是"下一步节点集"，resume 时从 next_nodes 继续跑，这个逻辑计划里有暗示但没写清楚 interrupt_before 的检查点语义（存 next_nodes=[该节点]，恢复时执行它）。另外 resume 带 state_update 时，是合并进 state 再跑，细节没写。
+4. **状态不可 JSON 序列化的情况**：节点返回的 dict 里有不可序列化对象（如函数、自定义类实例）时 checkpoint 会崩。计划没提约束（要求 state 必须 JSON 可序列化）或降级策略。
+5. **并行扇出串行执行 + reducer 合并顺序**：多个下一节点串行执行，每个都改 state，后面的节点看到的是前面节点改过的 state——这与 LangGraph 的超步模型语义不同（LangGraph 并行节点各自拿到同一份输入状态，最后合并）。计划只说"按注册顺序串行跑完"，没有说明状态语义是"链式可见"还是"各自快照后合并"。这是一个语义歧义，会在实现时造成分歧，也和 LangGraph 对照表声称的"同名语义"不符。
+   - 实际上 LangGraph 的 Pregel 模型中，同一超步的并行节点读到的是同一个输入状态，各自返回 partial update，然后 reducer 合并。而串行执行时后一个节点能看到前一个节点的更新。两种语义在 reduce 冲突时结果不同。计划没意识到这个差异，对照表里也没披露。这是设计含糊点。
+6. **条件边 + 检查点的循环场景**：max_steps 抛 GraphError 时，已完成步骤的检查点都在，但 run 状态是"失败"，list/resume 的行为没定义（resume 一个超限的 run 会立刻再抛错？）。
+7. **run_id 冲突**：`--run-id x` 用户指定，没说默认怎么生成（uuid？时间戳？），也没说重复 run_id 覆盖旧检查点的处理。
+8. **entry 缺失 set_entry_point 但有条件边起点的场景**：LangGraph 允许 add_conditional_edges(START, ...)，计划的 API 没写 START 能否作为条件边源。小事但会造成 API 不一致。
+9. **"存在可达 END 的路径"校验**：对有环图做可达性判断没问题（BFS），但"不可达节点报错"——LangGraph 实际允许不可达节点吗？这个校验比 LangGraph 严，没问题，但注意条件边 router 是运行时函数，静态校验只能按 mapping 的所有值算，这个细节没写（不过算实现细节）。
+10. **测试覆盖声明不完整**：没有 state reducer 合并的专项测试文件（test_state.py 缺失，reducer 逻辑测试塞在哪个文件没写明）；registry 的测试也没明确归属。小事。
+11. **`set_finish_point` 语义**：LangGraph 里 add_edge(node, END) 就是 finish，set_finish_point 是旧 API。计划混用了两代 API 风格（set_entry_point/set_finish_point 是 LangGraph 已废弃的旧 API，新 API 是 add_edge(START, x) / add_edge(x, END)）。计划里 add_edge 和 set_entry_point 并存，可以接受，但如果对照 LangGraph，建议统一用 add_edge(START, ...)。这是风格问题，不是错误。
+
+D. 流程/规范类：
+1. 计划说"README 不单建（遵循'不主动建文档'规则）"——但一个零依赖开源风格的库，没有 README，用户拿到的是 examples 自注释。可以接受，但 mermaid 导出等功能没有文档入口，CLI --help 是唯一入口。可接受，但值得指出。
+2. 计划第 102 行说收尾时"提交前会先向你确认 commit 范围"——符合用户规则。
+3. 规则 6 要求执行期建任务树。计划第 101 行已声明会建。但注意：本计划本身就是一次"复杂任务"的产物，评估本身不需要。
+
+E. 可行性总体判断：可行。纯标准库实现 StateGraph + 条件路由 + JSON checkpoint + CLI，工作量适中（估计几个文件千行级），技术风险低。主要风险不在技术，而在：
+- 环境路径错位（/workspace vs d:\MiniLangGraph）——执行前必须先修正
+- 串行扇出的状态语义没定义清楚——动手前要先定
+
+让我验证几个事实：
+1. 本机 Python 版本
+2. D:\trae-dcs-skills\knowledge\INDEX.md 是否有 70 类调研报告（验证计划引用）
+3. /workspace 是否存在
+
+按照用户规则 2（信息溯源），我验证后再下结论。
+
+另外还要想想计划里"沙箱 Python 3.14.7"——这说明计划是在一个 Linux 沙箱里写的（可能是另一个 AI 会话），而现在是 Windows 本机。d:\MiniLangGraph 目录里只有这一个 md，说明用户把计划拷过来了，准备在本机实施。所以评估要面向"在 Windows 本机实施"这个真实场景。
+
+Python 3.10+ 的声明：需要检查本机版本。
+
+还有一个点：计划说 tests 用 unittest——OK 标准库。
+
+还有 max_steps 默认 100——LangGraph recursion_limit 默认 25。100 偏宽松但无妨。
+
+checkpoint 目录 `.checkpoints/<run_id>/step_<NNNN>.json`：每步一个文件，100 步 100 个文件，无清理机制——大量 run 会积累文件。小事，可提。
+
+`interrupt` 的 InterruptSignal 返回——在 CLI 里 run 遇到中断时进程退出码是什么？没定义。小事。
+
+还有 resume 的 state_update 合并用什么 reducer？计划没说。实现时需要决定：按已注册 reducer 合并还是覆盖。值得指出。
+
+关于"存在可达 END 的路径"校验：如果用户故意建一个永不结束的循环图（比如生成器模式），编译期报错会阻止合法用例。LangGraph 不做这个校验（只靠 recursion_limit）。计划加了比 LangGraph 更严的校验，可能误伤"有意循环+外部中断"的场景。值得指出：这个校验和 interrupt_before 的组合场景（长循环人工监督）冲突。
+
+好，我组织一下评估输出。结构（按用户规则 4：先结论后理由）：
+
+结论：整体可行，设计范围裁剪合理，但有 1 个必须先解决的环境错位问题 + 若干设计含糊点。
+
+分：
+1. 总体判断
+2. 优点（简要）
+3. 不足（按严重程度）：
+   - 阻断级：路径环境错位（/workspace vs d:\MiniLangGraph，python3 vs python）
+   - 设计级：串行扇出的状态语义未定义（与 LangGraph 语义不同但对照表未披露）；checkpoint 原子写；状态 JSON 可序列化约束未声明；可达 END 校验过严与中断循环场景冲突
+   - 细节级：unittest discover 路径写错；router 返回未知键未定义；resume state_update 的合并语义；run_id 生成与冲突；max_steps 失败后 run 的可恢复性；检查点文件无清理；测试文件缺 state/registry 归属
+4. 建议（简短）
+
+先做验证。验证项：
+- python --version（本机）
+- D:\trae-dcs-skills\knowledge\INDEX.md 里 70 类是否存在
+- /workspace 是否存在
+
+然后输出评估。这是分析任务，不建任务树（单文件、纯分析、无多步骤落盘需求）。
+
+关于验证命令写法：`python3 -m unittest discover minigraph/tests -v`。项目根是 /workspace/minigraph/，下面有 minigraph/（包）和 tests/。discover 的参数是 start_dir。`minigraph/tests` 指向的是 minigraph/minigraph/tests——不存在。应为 `discover tests` 或 `discover -s tests`。确实是错的。
+
+不过等一下——如果 cwd 是 /workspace（仓库根），那 minigraph/tests 是对的！目录结构显示 /workspace/minigraph/ 下有 tests/。所以：
+- cwd=/workspace/minigraph → discover tests（或 -s tests）
+- cwd=/workspace → discover minigraph/tests
+
+计划里项目根是 /workspace/minigraph，验证命令没有指定 cwd，写 `minigraph/tests` 意味着 cwd=/workspace。这说得通，不算错，但含糊。而且 tests/ 里有子目录需要 __init__.py 或用 discover 默认。算了，这个点降级为"验证命令未写明工作目录，易踩坑"，不算硬伤。
+
+再想想 Python 版本兼容：3.10+ 声明。用的特性：类型注解? match? 都不强制。零依赖 OK。3.14.7 沙箱验证 vs 本机版本未知——我测一下。
+
+还要验证 Python 3.14 有没有什么坑：无，标准库 json/argparse/unittest 都稳。
+
+开始执行验证。
+
+- 本机 Python 3.14.3，满足 3.10+ 声明 ✓
+- /workspace 不存在 ✓（证实计划写的是沙箱环境路径，与实际 Windows 环境错位）
+- D:\trae-dcs-skills\knowledge\INDEX.md 不存在！计划第 9 行声称"已查经验：knowledge/INDEX.md → 70 类《编排器-工作者模式调研报告》"，但本机这个路径不存在。用户规则 7 说经验库在 D:\trae-dcs-skills。让我再确认一下 D 盘是否有这个仓库。
+
+让我检查 D:\trae-dcs-skills 是否存在。
+
+重要发现：
+1. D:\trae-dcs-skills 不存在（用户规则 7 引用的经验库路径在本机不存在——但这可能是用户环境变化，不是计划本身的错。不过计划第 9 行声称"已查经验：knowledge/INDEX.md → 70 类调研报告"，这个引用在本机无法验证。计划很可能是在一个沙箱环境（/workspace 存在、有 knowledge 目录的那个环境）里生成的，那个环境与本机不是同一个）。
+2. D:\LangGraph 存在！有意思。让我看看那是什么——可能是 LangGraph 的源码或克隆，这可以作为设计参考验证。
+3. d:\MiniLangGraph 就是当前目录（大小写不敏感）。
+
+让我快速看一下 D:\LangGraph 里有什么，可能是官方源码，可以用来验证计划对 LangGraph 架构的描述是否准确。
+
+D:\LangGraph\task_workflow 是一个 LangGraph 应用项目（有 langgraph.json、src/agent）。这说明用户本机有一个 LangGraph 的实际项目，可以作为验证计划中 LangGraph 架构描述的参考。不过这属于背景信息，对评估计划本身用处有限——计划描述的 LangGraph 架构（StateGraph/条件边/reducer/Checkpointer/interrupt/recursion_limit）是 LangGraph 的公开核心概念，与我的知识一致，没有明显错误。
+
+我不需要深挖这个项目。核心验证已完成：
+
+核验结果：
+1. 本机 Python 3.14.3 ✓ 满足计划 3.10+ 要求
+2. /workspace 不存在 ✗ —— 计划的落盘路径是沙箱路径，与实际环境（d:\MiniLangGraph，Windows）错位
+3. D:\trae-dcs-skills 不存在 ✗ —— 计划第 9 行声称"已查经验 knowledge/INDEX.md 70类调研报告"、第 102 行说收尾要入 D:\trae-dcs-skills\knowledge——本机不存在该仓库。这说明计划是在另一个环境（可能是 /workspace 沙箱）里写的，其中声称"已查经验"这一步在本机无法核实（信息边界规则：没查证过就说没查证）。
+
+现在组织评估报告。结构按用户规则 4：先结论，再理由。
+
+总体结论：技术设计可行、范围裁剪合理，但计划是在另一个沙箱环境写的，直接在本机执行会在环境层面卡住；另有 4 个设计级含糊点和一批细节问题需要先补。
+
+不足清单（按严重程度）：
+
+【环境错位（必须先解决）】
+1. 落盘路径 /workspace/minigraph/ 是 Linux 沙箱路径，本机不存在 /workspace。实际应落 d:\MiniLangGraph\。计划通篇（目录结构、假设与决策第 1 条、验证步骤）都按沙箱写。
+2. 经验库引用断链：计划声称"已查 knowledge/INDEX.md 70类调研报告"，并计划收尾入库 D:\trae-dcs-skills\knowledge——本机该仓库不存在，声称查过的经验无法核实（若沙箱与本地不是同一环境，那个调研报告的结论是否适用于本任务也未验证）。
+3. 验证命令 python3 在 Windows 上通常不可用（本机是 python）；unittest discover 未写明工作目录，`minigraph/tests` 只在 cwd=/workspace 时才成立，项目根其实是 /workspace/minigraph。
+
+【设计级含糊/缺陷】
+4. 串行扇出的状态语义未定义，且与对照表声称"同名语义"不符：LangGraph 同一超步的并行节点各自读同一份输入状态、返回 partial update 后由 reducer 合并；而"按注册顺序串行跑完"时后一节点能看到前一节点的更新，两种语义在有 reducer 冲突时结果不同。对照表里"注册序串行——显式简化"只披露了"不并行"，没披露"状态可见性不同"这个语义差异。这会在实现时造成分歧（是实现成"链式可见"还是"快照+合并"？），需要先定。
+5. 检查点写入没有原子性设计：每步写 JSON，若进程写到一半崩溃，文件损坏，resume 直接失败——这与"断点续跑"这个核心卖点冲突。应写临时文件再原子 rename（os.replace）。
+6. 状态可序列化约束未声明：节点返回的 dict 里若有不可 JSON 序列化对象（函数、自定义实例），checkpoint 落盘会崩。计划没写"state 必须 JSON 可序列化"的约束或报错策略。
+7. "存在可达 END 的路径"编译校验过严，与自家功能冲突：max_steps + interrupt_before 本来是给"长循环+人工介入"场景兜底的，但编译期强制要求可达 END 会直接禁止"有意无限循环靠中断退出"的合法图（LangGraph 本身不做此校验，只靠 recursion_limit）。两者矛盾。
+8. resume(run_id, state_update) 的合并语义没写：附加更新走已注册 reducer 还是直接覆盖？未定义。
+
+【细节级】
+9. 条件路由返回 mapping 之外的键时行为未定义（应抛 GraphError）。
+10. run_id 生成规则（默认 uuid/时间戳）与重名冲突处理（覆盖？报错？）未写。
+11. max_steps 超限抛错后，该 run 的检查点仍在，但它算不算"可恢复运行"、resume 它会不会立刻再抛错——list/resume 对失败 run 的行为未定义。
+12. 检查点每步一个文件（step_NNNN.json），100 步 100 个文件，多 run 积累无清理机制，也没写保留策略。
+13. 测试清单缺 state reducer 合并与 registry 的归属（4 个测试文件里没提到 test_state.py，reducer 逻辑塞哪个文件未写明）。
+14. START 能否作为条件边源（add_conditional_edges(START, ...)）没写，而这是 LangGraph 常用入口方式，会与 set_entry_point 形成两套入口 API。
+15. CLI 遇 interrupt 的进程退出码未定义（脚本化调用时需要区分"完成"与"等待人工"）。
+
+【优点（简短确认）】
+- 范围裁剪明确（"明确不做"清单具体，防蔓延）
+- 模块职责划分清晰，单文件规模小
+- max_steps 补死循环防护、检查点 JSON 人可读、对照表降低迁移理解成本
+- 验证步骤可操作（三个场景 example + CLI 冒烟）
+
+建议：
+- 执行前先做三件事：路径本地化（/workspace → d:\MiniLangGraph）；确认经验库位置（D:\trae-dcs-skills 是否要恢复/克隆，或改本机实际路径）；把第 4 条串行扇出的状态语义定下来（建议：保持 LangGraph 语义——同一批 next_nodes 各自拿进入该批次的同一份 state 快照，跑完按 reducer 合并，这样对照表才站得住）。
+- 设计补充：原子写检查点；声明 state 必须 JSON 可序列化；放宽"可达 END"校验为警告或只校验有入口。
+
+字数控制：用户要通俗直白、先结论后理由。我用分节列点。不要太长，但这个评估本身信息量大，用户明确要"指出不足"，所以要完整列出。控制在合理篇幅。
+
+引用行号：计划文件第 5 行（落盘/workspace）、第 9 行（已查经验）、第 13 行（沙箱Python 3.14.7）、第 23 行（明确不做）、第 62 行（可达END校验）、第 65 行（串行）、第 67 行（max_steps）、第 106 行（unittest discover）。带 file:/// 链接引用。
+
+注意规则 2：报数字附来源。我核验的事实附命令结果来源：
+- 本机 Python 3.14.3（实测 python --version）
+- /workspace 不存在（实测 Test-Path = False）
+- D:\trae-dcs-skills 不存在（实测 Test-Path = False）
+- 计划声称沙箱 Python 3.14.7（计划第 13 行，无法在本机复现）
+
+开始写评估。
+核验完成。以下是评估结论。
+
+# 评估结论
+
+**总体判断：技术设计可行，范围裁剪合理，但这份计划是在另一个沙箱环境里写的，直接在本机执行会在环境层面卡住；另有 1 个语义级含糊点和若干设计遗漏需要先补。**
+
+事实核验结果（本机实测）：
+- 本机 Python 3.14.3 —— 满足计划的 3.10+ 要求 ✓
+- `/workspace` 不存在 —— 计划的落盘路径在本机无效 ✗
+- `D:\trae-dcs-skills` 不存在 —— 计划引用的经验库路径断链 ✗
+
+---
+
+## 一、环境错位问题（必须先解决，否则执行第一步就卡）
+
+1. **落盘路径是沙箱路径**。计划通篇按 `/workspace/minigraph/` 写（[第5行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L5)、[第13行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L13) 还提到"沙箱 Python 3.14.7"），而实际环境是 Windows 的 `d:\MiniLangGraph`。目录结构、假设与决策、验证步骤全需本地化。
+2. **经验库引用断链且无法核实**。计划声称"已查 knowledge/INDEX.md → 70类调研报告"（[第9行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L9)），收尾还要入库 `D:\trae-dcs-skills\knowledge`（[第102行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L102)）——本机该仓库不存在，声称查过的经验我无法核实（按信息边界规则，此条算“未经证实的前提”，其中"无死循环防护是反面教材"的结论是否真来自那份报告存疑）。
+3. **验证命令在 Windows 上跑不通**。`python3` 在 Windows 上通常不可用（本机是 `python`）；`unittest discover minigraph/tests`（[第106行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L106)）只在 cwd=/workspace 时路径才成立，项目根其实是 /workspace/minigraph，命令没写工作目录，照抄必踩坑。
+
+## 二、设计级不足
+
+4. **串行扇出的状态语义未定义，且与对照表自相矛盾**。LangGraph 同一超步的并行节点各自读**同一份输入状态**，返回部分更新后由 reducer 合并；而“按注册顺序串行跑完”（[第65行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L65)）时后一个节点能看到前一个节点的更新——两种语义在有 reducer 冲突时结果不同。对照表（[第94行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L94)）只披露了“不并行”，没披露“状态可见性不同”。这是实现时必然要做的决定，计划里没做。
+5. **检查点没有原子写入设计**。每步写 JSON（[第72行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L72)），进程写到一半崩溃则文件损坏，resume 直接失败——与“断点续跑”这个核心卖点冲突。应补“写临时文件 + os.replace 原子改名”。
+6. **状态可序列化约束未声明**。节点返回的 dict 里若有不可 JSON 序列化的对象（函数、自定义实例），checkpoint 落盘就崩。计划没写“state 必须可序列化”的约束。
+7. **“存在可达 END 的路径”校验过严，与自家功能冲突**。[第62行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L62) 编译期强制可达 END，但 max_steps + interrupt_before（[第68行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L68)）本就是为“长循环+人工介入”兜底的——“有意无限循环、靠中断退出”的合法图会被编译期直接拒掉。LangGraph 本身不做此校验，只靠 recursion_limit。建议改为警告或不校验。
+8. **resume 的 state_update 合并语义没写**（[第69行](d:\MiniLangGraph\本地简化版LangGraph工作流引擎开发计划.md#L69)）：附加更新走已注册 reducer 还是直接覆盖？未定义。
+
+## 三、细节级遗漏
+
+9. 条件路由返回 mapping 之外的键时行为未定义（应抛 GraphError，计划没写）。
+10. run_id 默认生成规则（uuid/时间戳）与重名冲突处理（覆盖还是报错）未写。
+11. max_steps 超限抛错后，该 run 的检查点还在——它算不算可恢复运行、resume 会不会立刻再抛错，未定义。
+12. 检查点每步一个文件，100 步 100 个文件，多 run 积累无清理/保留策略。
+13. 测试清单里 reducer 合并逻辑和 registry 的测试归属缺失（4 个测试文件没有对应 test_state.py，塞哪个文件未写明）。
+14. START 能否作为条件边源（`add_conditional_edges(START, ...)`）没写——这是 LangGraph 常用入口方式，与 set_entry_point 会形成两套入口 API。
+15. CLI 遇 interrupt 的进程退出码未定义，脚本化调用无法区分“完成”与“等待人工”。
+
+## 四、合理性确认（做得对的部分）
+
+- “明确不做”清单具体（异步/Pregel并行/子图/LLM绑定），防范围蔓延；
+- 模块划分职责清晰，单文件规模小；
+- max_steps 补死循环防护、检查点纯 JSON 人可读、LangGraph 对照表降低理解成本；
+- 验证步骤可操作（三个 example 场景 + CLI 冒烟 + 检查点抽查）。
+
+---
+
+## 建议
+
+执行前先补三件事：**路径本地化**（/workspace → d:\MiniLangGraph，python3 → python）；**确认经验库位置**（D:\trae-dcs-skills 是要恢复/克隆，还是本机路径已变，否则规则 7 的开工检索和收尾入库都落空）；**定死串行扇出的状态语义**（建议保持 LangGraph 语义：同一批 next_nodes 各自拿进入批次时的同一份 state 快照，跑完按 reducer 合并——这样对照表“同名语义”才站得住，否则要把差异写进 docstring）。设计补充按上面第 5–8 条逐项落进计划再动手。
