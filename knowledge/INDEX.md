@@ -15,7 +15,7 @@
 | 40-变量与功能块规范 | 2 |
 | 50-实施与分组程序 | 2 |
 | 60-核对复查与整改 | 4 |
-| 70-工具与工作方法 | 4 |
+| 70-工具与工作方法 | 5 |
 | 90-项目档案 | 1 |
 
 ## 00-规范
@@ -89,6 +89,7 @@
 | [GitHub电气自动化项目调研报告](70-工具与工作方法/GitHub电气自动化项目调研报告_20260914.md) | 2026-09-14 | 方法论 |  | [GitHub调研,PLC,IEC61131-3,FBD,AI辅助编程] | 4方向检索+8重点项目研究（Spec2Control/twincat-agent/plc-st-review/oscat/TcUnit等），21条改进点落地到连锁分析skill/任务树skill/总纲/知识条目 |
 | [Prompt写法技巧清单（system_prompts_leaks 11产品提炼）](70-工具与工作方法/Prompt写法技巧清单_20260916.md) | 2026-09-16 | 方法论 |  | [prompt工程,系统提示词,写法技巧,skill改进,AI辅助编程] | 11产品30条prompt写法技巧（结构/边界/工具/格式四维度+三档力度元技巧）与12条TRAE规则/skill改进映射 |
 | [AutoCAD MCP服务器安装配置说明](70-工具与工作方法/CAD_MCP安装配置说明_20260918.md) | 2026-09-18 | 实施说明 | AutoCAD 2026 | [MCP,AutoCAD,CAD工具链,环境配置] | 本机两个CAD-MCP的安装路径、启动命令、LISP加载要点与跳过收费仓库的理由 |
+| [REA（Reverse Engineer Anything）安装配置说明](70-工具与工作方法/REA安装配置说明_20261013.md) | 2026-10-13 | 实施说明 | 逆向工程工具链 | [MCP,Skill,逆向工程,REA,rea-agents,环境配置] | REA skill+MCP(170工具)手动注册安装（WorkBuddy不在官方客户端列表）、mcp.json配置、握手验证与升级方法 |
 
 ## 90-项目档案
 
