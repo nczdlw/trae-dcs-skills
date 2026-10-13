@@ -1,183 +1,150 @@
 ---
-title: MinLib拆解复用-公共基础设计（命名/CC结构体/参数模板）
+title: MinLib拆解复用-公共基础设计V2（官方机制对齐）
 date: 2026-10-13
 project: F163
 type: 开发说明
 device: ABB 800xA
-tags: [MinLib,800xA,ControlConnection,STRUCT,命名规范,参数表]
-summary: CL库命名规范、CC_Equip/CC_Signal/CC_Group三个控制连接结构体全字段定义、参数表六要素模板
-source: 数据表 p2/p4/p5 + F163规则总纲 §3.5/§4.7/§5
+tags: [MinLib,800xA,PCC,GCC,LCC,联锁参数,IntlkType,Std_Type,仿真,命名规范]
+summary: V2：官方四条总线机制、PCC联锁参数全表（IntlkType/IntlkDir/StartInhibit/LocStartOverride）、Std_Type报警禁用矩阵、仿真初始行为与安全规则、命名规范（官方CM命名+F163命名）
+source: 02 Basic手册3BHS161556 RevD §2.2.3-2.2.5 + 00产品指南 §3 + 04手册p5-6
 ---
 
-# 01 公共基础设计
+# 01 公共基础设计（V2）
 
-> 本篇是 CL 库（CEMENT_LIB）的"地基"：命名规范 + 三条 Control Connection 的完整字段定义 + 参数表模板。
-> 除特别标注【核实】外，均为【自拟】设计（依据见 00 文档第 2 章）。
+> **V2 变更**：总线段落改为"官方机制+CL 落地"双栏。官方 Data Type 字段清单在 02/04 文档按对象展开，本篇聚焦**机制和参数体系**（这是官方手册里最值钱的部分）。
+> 标注：【核实-手册】=官方写明带页码；【CL 适配】=落地设计。
 
-## 1. 库与命名规范
+## 1. 命名规范（官方实例 + F163 规则）
 
-### 1.1 库信息
+### 1.1 官方 CM 命名实例【核实-00手册p32/p42】
 
-| 项 | 值 |
+| 官方对象 | Control Module 名 | Module Parameter "Name" |
+|---|---|---|
+| DIS（流量开关） | `_562_BM1_FS1R` | `562-BM1.FS1R` |
+| MOT1（磨主电机） | `_562_BM1_M1R` | `562-BM1.M1R` |
+| AIS（轴承温度） | `_561T101_R` | `562TI101R` |
+| GROUP（组） | `GR_562_2R` | `GR_562_2R` |
+| PREBIN（预选1） | `GR_562_2R_P1` | `GR_562_2R_P1` |
+
+规律：CM 内部名下划线前缀（`_` 开头防与工程变量撞名），对外显示名用"区域-设备.信号"点分格式；组用 `GR_` 前缀，预选挂在组名下 `_P1/_P2`。
+
+### 1.2 CL 库命名【CL 适配，对齐官方风格+F163 §4.7】
+
+- CM 类型：`MOT_C / VLV_C / GRP_C / PRE_C / STW_C / SIG_C / CHK_C`（对应官方 MOT1/VLV1/Group/Prebin/STW/DIS-AIS/CCF）；
+- 工程实例：下划线前缀 + 设计院编号，如 `_N562_HD1_E01`（CM 名）/ `N562-HD1.E01`（Name 参数，显示用）；
+- 组：`_N562_GR_G30` / `N562-GR.G30`；预选：`_N562_GR_G30_P1`；
+- 变量命名仍按 F163 §4.7：`N<节点>_<系统>_<设备>_<信号>_<后缀>`。
+
+## 2. 四条总线：官方机制 → CL 落地
+
+### 2.1 总机制【核实-00手册p25-29】
+
+- 模块间经**预定义接口的结构化变量**（control connection）交换数据：一根逻辑线=多变量；父子双向；连接数不限；
+- 状态子→父、命令父→子或子→父都行；PCC 允许无限个信号作用于一个消费者【00手册p26】；
+- 编程只在 Diagram Editor 里连线 + 配参数，**块间不写散代码**（"胶水逻辑"对操作员隐藏）【00手册p28-29】。
+
+### 2.2 CL 落地的四条总线【CL 适配】
+
+| CL 总线 | 对齐官方 | 连什么 | 字段定义在 |
+|---|---|---|---|
+| `GCC_ComData` | GCC | 组↔设备 | 04 文档 §2（官方 Group/Consumer 的 GCC 接口字段） |
+| `PCC_ComData` | PCC | 信号↔设备 | 02 文档 §2 + 本篇 §3 |
+| `LCC_LoopData` | LCC（LoopControlData） | 回路↔执行器 | 06 文档 §5（二期） |
+| `CC_Base` | -CC 通用 | 父子状态/命令基础 | 各对象公共章 |
+
+> 官方 PCC 的结构化变量名在 Basic 手册参数表里已见到：**`PCCComData`**（引脚描述 "IN/OUT: Interlock Bus, PriorityCommand/Interlock"）【02手册p?（DIS 参数表）】。CL 版字段与官方 Data Type 的对应关系在 02/04 文档逐对象列。
+
+## 3. PCC 联锁参数体系（官方全量，最值钱的一段）【核实-02手册p6-10】
+
+### 3.1 联锁配置参数（配在信号对象上，不在设备上！）
+
+| 参数 | 作用 |
 |---|---|
-| 库名 | CEMENT_LIB |
-| 版本 | 1.0.0（首个可用版），修订递增 1.0.x |
-| 适用 | ABB 800xA 6.1.0 / Control Builder M（与 F163 现场一致【F163 §1】） |
-| 目标 | 新增控制器/新组直接用；老 CementMill 程序不动 |
+| **IntlkType** | 联锁类别（见 3.2 表） |
+| **IntlkDir** | 双向设备的方向相关配置（见 3.3 表） |
+| **IntlkStartInhibit** | PCC 父对象（MOTx/VLVx）启动后**设定时间内旁路联锁**——应用：电机启动电流涌入（rush-in）误报 |
+| **IntlkLocStartOverride** | **本地模式下持续按住 LCB 启动按钮时旁路联锁**（要求所有 PCC 父都在 LOC）——应用：皮带机本地纠偏时临时旁路跑偏开关 |
 
-### 1.2 功能块类型命名（FBT）
+IntlkType/IntlkDir 是**按限值（limit-based）**配置的；IntlkStartInhibit/IntlkLocStartOverride 对对象全部限值生效【02手册p6】。
 
-| 类型名 | 用途 | 备注 |
+### 3.2 IntlkType 取值表【核实-02手册p7-8】
+
+| 配置项 | 含义 |
+|---|---|
+| PCC_Disabled | PCC 总线上无报警无联锁转发 |
+| No_Interlock | 不转发联锁，只转发报警 |
+| PD_PrevDrive | 前序设备联锁，**组保持 Ready for Start** |
+| IA_Process | 过程联锁；**Auto 模式下 ok 条件后不自动复位**，只能由另一 PCC 限值/信号的 Auto_Start 命令复位 |
+| IA_Process_RFS | 过程联锁，组保持 RFS；Auto 行为同上 |
+| IB_Equipment | 设备联锁 |
+| IB_Equipment_RFS | 设备联锁，组保持 RFS |
+| IC_Safety | 安全联锁 |
+| IC_Safety_RFS | 安全联锁，组保持 RFS |
+| Auto_Start | 仅 Auto 模式用：移除已保持的 IA 联锁（若已不激活）从而启动设备（IO.In.IA 也需 OK） |
+
+> **RFS 后缀 = "组保持就绪"**：联锁动作只挡本设备，不挡组启动——这是官方处理"部分设备联锁但组仍可启"的标准机制，V1 自拟的 EnGrpHold 可以退役了。
+
+### 3.3 IntlkDir 取值表（按信号 CM 类型支持矩阵）【核实-02手册p9-10】
+
+| 组 | 取值 | 支持 |
 |---|---|---|
-| MOTOR_C | 开关型动力设备（电机、加热器、风机、泵）通用 | 对应现有 MOTOR1 的升级位 |
-| VALVE_C | 阀门（开关阀/调节阀双模式） | 对应 VALVE1/PVALVE |
-| GROUP_C | 组（顺序/周期/首报/汇总） | 对应 Group/GROUP1 的升级位 |
-| SEL_C | 选择器（主备切换/路由） | 数据表 p2 selector 的落地 |
-| SIG_C | 联锁信号（DI/AI/PID 输出联锁量） | 数据表 p4 PCC 的落地 |
-| CHK_C | 调试检查框架块 | 官网 2019 commissioning check 的落地 |
-| TDeb | 输入去抖辅助块（TON+TOF 封装） | 内部辅助，不直接拖 |
+| 基本方向 | DirX / DirY / DirXY | AIS AIC DIS DIC PCC_Com_Drive PCC_Threshold_AND3 PIDCtrl PIDAdvCtrl 全支持 |
+| 启动后忽视 | DirXStart / DirYStart / DirXYStart | 同上；运行到位后该联锁被忽视 |
+| 动态反馈 | DirFBX / DirFBY / DirFBXY | 信号作动态反馈（如 MOT1 的 FB1）：条件满足 IO.Out.RunX/Y 才激活；可带预警/报警/就绪延时；**PCC_Com_Drive 不支持** |
+| 快速任务 | DirXFast / DirYFast / DirXYFast / DirFBXFast… | 仅 DIS（Alarm）；用于 MOT2 定位停止、MOTP 中停等需快速停止的场合 |
+| noAck 变体 | DirXnoAck 等（含 Start/FB/Fast 组合） | 用 "Value" 代替 "Normal"：报警未确认但值恢复正常后仍可操作 |
 
-命名规则：全大写 + 下划线；设备类以 `_C`（Cement）结尾与旧库区分；辅助块小驼峰。**类型名大小写敏感**【F163 §5.6】。
+### 3.4 PCC 扩展功能块【核实-02手册p6】
 
-### 1.3 实例与变量命名（工程侧，延续 F163 §4.7）
+| 块 | 用途 |
+|---|---|
+| **PCC_Connect** | 一个信号接 2+ 消费者/组；可为每个消费者单独配"联锁转发掩码"（按限值决定哪些联锁被阻断）；还能覆盖消费者对信号的报警/事件使能 |
+| **PCC_Threshold_AND3** | 复杂联锁：多个自定义条件相与后作为 PCC 总线上的联锁源 |
+| **PCC_Intlk** | 通用联锁配置对象（参数同 AIC/AIS/DIC/DIS/PIDCtrl）【02手册p6】 |
 
-- FB 实例：`N<节点><系统><设备类型><编号>`，如 `N562HD1E01`（不变）；
-- 变量：`N<节点>_<系统>_<设备>_<信号>_<后缀>`，如 `N562_HD1_T1_T_H`（不变）；
-- **CC 连线变量**（本库新增）：`N<节点>_<系统>_<设备>_CC`（命令）+ `_CCS`（状态），如 `N562_HD1_E01_CC` / `N562_HD1_E01_CCS`；
-- Description 格式不变：`英文描述 / 中文描述 - 莱歇编号`，如 `Raw Mill Fan / 原料磨风机 - 1632FN01`【F163 §3.8】。
+## 4. 报警禁用矩阵（官方 Std_Type）【核实-02手册p6-7】
 
-### 1.4 状态枚举常量（全库统一，Int 表示）
+自动禁用 AIS/DIS 报警的规则，由工程常量决定：
 
-800xA ST 无 enum，用 `VAR CONST` 定义命名常量（**是否允许在 FBT 内 VAR CONST 赋值需实测确认**；若不允许，把常量写进文档和面板配置，代码里直接用数字+注释）。
+| 设置 | 规则 |
+|---|---|
+| `cBMI.Std_Type = 0`（默认） | 电机未运行、NC 阀关闭、NO 阀开启、接组时组未启动 → **该信号的报警自动禁用** |
+| `cBMI.Std_Type = 1` | 同 0，但**组已启动且消费者被预选时一律报警**；若消费者是 standby 预选，**报警优先级自动从 Failure 降为 Warning** |
+| `PCCAEListFrcEn = true` | 关闭自动禁用——用于需要独立于父状态报警的信号（如料位） |
 
-| 常量 | 值 | 含义（设备状态 Status） |
-|---|---|---|
-| ST_STOP | 0 | 停止 |
-| ST_STARTING | 1 | 启动中 |
-| ST_RUN | 2 | 运行 |
-| ST_STOPPING | 3 | 停止中 |
-| ST_FAULT | 4 | 故障 |
-| ST_LOCAL | 5 | 本地 |
-| ST_MAINT | 6 | 检修 |
+**这一张表就是 V1"四条抑制规则"的官方正解**：组停抑制=Std_Type 0；备用降级=Std_Type 1；独立信号=PCCAEListFrcEn；本地自动确认见 §5。
 
-| 常量 | 值 | 含义（报警等级 AlmLevel） |
-|---|---|---|
-| ALM_NONE | 0 | 无报警 |
-| ALM_WARN | 1 | 警告 |
-| ALM_FLT | 2 | 故障 |
+## 5. 报警确认与首报【核实-02手册p6 + 00手册p31/p44-46】
 
-| 常量 | 值 | 含义（联锁类型 SigType，对齐 F163 §6.2） |
-|---|---|---|
-| ITL_ALM | 0 | 仅报警（不动作） |
-| ITL_STA | 1 | 启动禁止（STAITL） |
-| ITL_OPR | 2 | 操作联锁（OPITL，运行中动作） |
-| ITL_PRT | 3 | 保护联锁（PRTITL，跳闸） |
-| ITL_PST | 4 | 保护性启动（PSTITL） |
+- **双向报警确认**：AIS/DIS ↔ Consumer/Group 任一面板确认；组面板确认会下传到信号级；典型用法=消费者 Local 控制时自动确认；
+- **首报检测**：信号侧自动首报检测，首报信号显示在消费者和组面板上，**带链接按钮直达源信号**；
+- 组面板文字显示"第一个不运行的消费者"+下钻到设备+设备下钻到信号（00 手册p44-46 实例）。
 
-## 2. Control Connection 结构体定义
+## 6. 仿真模式（官方规则）【核实-02手册p11】
 
-三条 CC 都是普通 STRUCT，按 F163 §3.5 **先建数据类型再建 FBT**（STRUCT 路线先行）。所有字段带中文注释；字段名大小写敏感【F163 §5.6】。
+| 项 | 官方行为 |
+|---|---|
+| 可仿真对象 | DIS、AIS、DOS、AOS（Consumer/Group 的 Simulation Mode 见 07 文档） |
+| 硬件错误连接 | 仿真模式下**不考虑** |
+| 热启动后初始行为 | AIS：值=量程 50%、输入阻塞；DIS：值=正常位、输入阻塞；DOS/AOS：不考虑硬件连接 |
+| 输出对象的坑 | **DOS/AOS 若接了硬件，所有改动仍会写进硬件**——仿真不等于输出被屏蔽！ |
+| 安全红线 | 启用仿真前**必须先断开 Profibus、Modbus 及其他硬件接口** |
 
-### 2.1 CC_EqCmd —— 组→设备 命令通道（父→子，单向）
+> V1 自拟的"仿真时物理输出强制关断"与官方不同：官方输出对象仿真不屏蔽硬件写入，靠"先断总线"保平安。CL 版按官方来，别自己发明。
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| Enable | Bool | TRUE=本设备参与本组。FALSE=断开连接（MinLib "运行时可增删设备"的落地：改 Enable 即把设备挂/摘出组，不用改代码）【参照数据表 p2】 |
-| Start | Bool | 启动命令（组按步序逐个给，见 04 文档） |
-| Stop | Bool | 停止命令 |
-| StepNo | Int | 启动步号（1..N）。**改这个参数就改了启动顺序**，下装即生效【参照数据表 p2】 |
-| StepNoStop | Int | 停止步号（默认与 StepNo 相同，停止默认反序） |
-| DelayStart | Time | 到本步后延时多久再发启动命令（躲开同时启动冲击） |
-| DelayStop | Time | 停止步间延时 |
-| EnStandby | Bool | TRUE=本设备在该组是备用。备用设备报警自动降级【数据表 p5】 |
-| EnAckLocal | Bool | TRUE=本地模式时该设备报警自动确认【数据表 p5】 |
-| EnCyclic | Bool | TRUE=组按周期模式运行时本设备随周期启停（见 04 文档） |
-| EnSimDown | Bool | 组级仿真下发标志（组 EnSim=TRUE 时经此字段把仿真传到每台设备，见 07 文档 §1.1） |
+## 7. Parameter Error 机制【核实-02手册p11】
 
-### 2.2 CC_EqStat —— 设备→组 状态通道（子→父，单向）
+- CM 参数（本块或相连块）非法时，图形元素和面板显示 **Parameter Error**——含义是"应用程序需要修正"，不是过程故障；
+- CL 库每条参数加范围检查，非法值触发 Parameter Error 指示而不是默默钳位。
 
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| Run | Bool | 运行反馈已确认 |
-| Ready | Bool | 就绪（无禁止、无故障，可启动） |
-| Fault | Bool | 故障（需复位） |
-| Warning | Bool | 警告（未故障） |
-| Local | Bool | 本地模式（面板操作无效，供组显示） |
-| Maint | Bool | 检修模式（挂牌） |
-| Status | Int | 状态枚举，见 1.4 表 |
-| RunTime | Time | 本次连续运行时长（主备均衡切换的依据，SEL_C 用） |
-| FirstFault | Bool | TRUE=我是导致组失败的首报设备（组只认第一个，见 04 文档） |
-| FaultTag | String[32] | 自身 tag，故障时由组记录并在组面板显示+超链接【数据表 p2】 |
-| SigTag | String[32] | 引发本次故障的**联锁信号 tag**（设备面板显示+超链接）【数据表 p4】 |
-| AlmLevel | Int | 当前最高报警等级（0/1/2） |
-| AlmActive | Int | 活动报警条数 |
-| ChkPass | Bool | 本设备调试检查已通过（CHK_C，组级汇总用） |
+## 8. 参数表模板（V2）
 
-> String 字段注意：FBT 内部变量 string 初值是否允许直接赋值**需实测确认**；若报错，改为外部参数注入（FaultTag 在实例化时由工程变量赋值）。
-
-### 2.3 CC_SigOut —— 信号→设备 联锁通道（父→子，单向）
-
-一个信号块（SIG_C）可同时联锁多台设备：每台设备一个独立 CC_SigOut 实例。
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| AlmLevel | Int | 0无/1警告/2故障（阈值+延时+设备状态算出） |
-| Interlock | Bool | 联锁动作输出（按 SigType 语义执行） |
-| SigType | Int | 联锁类型，见 1.4 表 |
-| InhibitStart | Bool | 启动禁止计时中（倒计时期间禁止启动，数据表 p4 "start inhibit time"） |
-| Override | Bool | TRUE=临时旁路（维修/异常工况用，**联锁 viewer 必须显示**【数据表 p4】） |
-| OvrdLeft | Time | override 剩余时间（0=无限期，>0=到时自动解除） |
-| SigTag | String[32] | 信号 tag（设备面板显示+超链接） |
-| ThrWarn | Real | 警告阈值（在线可改，面板显示） |
-| ThrFlt | Real | 故障阈值（在线可改，面板显示） |
-| DelayWarn | Time | 警告延时（数据表 p4 "warning delay"） |
-| DelayFlt | Time | 故障延时（数据表 p4 "failure delay"） |
-
-### 2.4 CC_SigIn —— 设备→信号 回读通道（子→父，单向）
-
-信号块要靠设备状态决定是否报警/抑制【数据表 p4："signals read the process equipment status"】：
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| Run | Bool | 设备运行中 |
-| Local | Bool | 设备本地模式（此状态下部分联锁自动确认/降级） |
-| Maint | Bool | 设备检修（此状态下联锁屏蔽，viewer 显示） |
-| GroupActive | Bool | 设备所属组是否活动（组停=不报，数据表 p5 规则1） |
-| GroupStarting | Bool | 组正在启动（启动抑制期，数据表 p5 规则2） |
-
-### 2.5 CC_Group —— 组→上层 汇总通道（组→组/组→系统）
-
-| 字段 | 类型 | 说明 |
-|---|---|---|
-| GroupRun | Bool | 组运行（全部应运行设备在跑） |
-| GroupReady | Bool | 组就绪 |
-| GroupFault | Bool | 组故障 |
-| FirstFaultTag | String[32] | 首报设备 tag（组面板+上级组用） |
-| EquipTotal | Int | 组内设备总数（Enable=TRUE 计数） |
-| EquipRun | Int | 运行中设备数 |
-| ChkDone | Int | 调试检查已通过项数 |
-| ChkTotal | Int | 调试检查总项数 |
-
-## 3. 参数表模板（每个 FBT 一份，工程时填）
-
-每功能块的参数按此模板列全（02/03/04 文档直接用它）：
-
-| 参数名 | 类型 | 默认值 | 范围/单位 | 在线可改 | 面板显示 | 中文说明 |
+| 参数名 | 类型 | 默认值 | 范围 | 在线可改 | 面板显示 | 中文说明 |
 |---|---|---|---|---|---|---|
-| 例：T_StartMax | Time | T#5s | 0~60s | 是 | 是 | 启动反馈超时：发出启动命令后多久收不到运行反馈即报"启动失败" |
+| 例：IntlkType | Enum | PCC_Disabled | 见 §3.2 | 是 | 是 | 联锁类别（信号对象参数） |
 
-六要素缺一不可；**现场可变数值（延时/量程/阈值/联锁）一律参数化，改参数不改代码**【用户既定原则】。
+> V2 起参数表优先采用官方参数名（IntlkType/IntlkDir/IntlkStartInhibit/IntlkLocStartOverride/cBMI.Std_Type/PCCAEListFrcEn…），CL 新增参数才用自拟名并标注【CL 适配】。
 
-## 4. 800xA 落地注意事项（编译防错清单）
+## 9. 本篇结论
 
-1. **先建 STRUCT 再建 FBT**（F163 §3.5 导入顺序：STRUCT → VAR → PAR → FUN → ST → FBD → 整程序编译）；
-2. CC 结构体变量在工程 VAR 表声明，**Initial Value 列保持空**（结构体聚合写初值会报 Error 1340【F163 §4.5】），需要非零初值的在 ST 初始化段逐个成员赋值；
-3. `in_out` 管脚不带 retain（Error 1005）；`in` 管脚不赋值（Error 1034）【F163 §5.7】；
-4. 引脚名/类型名大小写敏感，`TOf`/`R_Trig`/`AlarmCond` 按官方大小写【F163 §5.6】；
-5. Code 内禁字符串/时间字面量——时间用 `T#5s` 赋给参数默认值，string 放 VAR 表初值或外部注入【F163 §5.4】；
-6. 禁位运算，拆字节用 `/2^n MOD 2`，打包用 IF 累加【F163 §5.3】；
-7. FBT 内实例化的辅助 FB（TOf/R_Trig/AlarmCond/TDeb）必须在 FBT 的 Code 段被调用，否则 Warning 1542【F163 §5.5】。
-
-## 5. 本篇结论
-
-三条 CC（CC_EqCmd/CC_EqStat/CC_SigOut+CC_SigIn/CC_Group）就是 CL 库的全部"散线替代品"：组与设备之间只剩两根结构体线，信号与设备之间两根，组向上汇总一根。字段设计原则就一条——**凡是最初可能想写死在代码里的判断依据，都提成字段或参数**。
+01 的 V2 核心是三张官方表：**IntlkType 九项、IntlkDir 五组、Std_Type 报警禁用矩阵**，外加两个官方扩展块（PCC_Connect/PCC_Threshold_AND3）和一条仿真安全红线（先断总线再仿真）。写 CL 库时这些名字直接照抄官方，现场和 ABB 支持人员对话时零翻译成本。

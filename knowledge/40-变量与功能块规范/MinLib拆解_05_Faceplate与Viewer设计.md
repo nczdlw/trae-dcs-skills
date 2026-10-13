@@ -1,167 +1,101 @@
 ---
-title: MinLib拆解复用-Faceplate与Viewer设计
+title: MinLib拆解复用-Faceplate与Viewer设计V2（官方对齐）
 date: 2026-10-13
 project: F163
 type: 开发说明
 device: ABB 800xA
-tags: [MinLib,800xA,faceplate,面板,viewer,三重编码,超链接,Aspect]
-summary: 面板设计总则、七态三重编码表、FP_Motor/FP_Valve/FP_Group/FP_Signal分区布局、组状态viewer与联锁viewer列定义、800xA Aspect落地要点
-source: 数据表 p2/p4/p5 + ABB官网2019 + F163规则总纲
+tags: [MinLib,800xA,faceplate,VCO,ASM,GraphiXs,ProcessPanel,viewer,图形元素]
+summary: V2：官方Faceplate八要素、Drive图形元素族与状态色、VCO三种显示模式与ASM灰度规范、Step/Status/PCC三viewer列定义、Process Panel P800对象清单与工程指南、CL面板落地映射
+source: 00产品指南§2 + 04手册§2.3 + 12 Process Panel手册3BHS835707 RevD + 05手册§2.3
 ---
 
-# 05 Faceplate 与 Viewer 设计
+# 05 Faceplate 与 Viewer 设计（V2）
 
-> 面板是操作员唯一接触的东西。MinLib 的面板哲学三句话【核实，数据表 p5 + 官网 2019】：
-> **①颜色+形状+标签三重编码，不只靠颜色；②画面聚焦异常工况；③父子面板双向动态超链接。**
-> 以下为按这三条落地的【自拟】设计。
+> **V2 变更**：全部改为官方手册内容。V1 自拟的"四区布局/三重编码表"保留为 CL 落地简化版，官方结构以本篇为准。
+> 页码标注：[00手册pN]=产品指南，[04手册pN]=Consumer Objects，[12手册pN]=Process Panel，[05手册pN]=Group Objects。
 
-## 1. 三重编码表（全库统一，先背这张表）
+## 1. Faceplate 官方八要素【核实-00手册p19】
 
-| 设备状态 | 形状 | 颜色 | 文字标签 |
-|---|---|---|---|
-| STOP 停止 | 方形 ■ | 灰 #9E9E9E | 停 |
-| RUN 运行 | 圆形 ● | 绿 #34A853 | 运 |
-| STARTING 启动中 | 三角 ▲（慢闪） | 黄 #F5A623 | 启中 |
-| STOPPING 停止中 | 三角 ▼（慢闪） | 黄 #F5A623 | 停中 |
-| FAULT 故障 | 八边形 ⬣ | 红 #EA4335（快闪） | 故 |
-| LOCAL 就地 | 菱形 ◆ | 蓝 #1A73E8 | 就 |
-| MAINT 检修 | 六边形 ⬢ | 橙 #FB8C00 | 检 |
-
-| 报警等级 | 形状 | 颜色 | 文字 |
-|---|---|---|---|
-| 警告 | 三角 ▲ | 黄 | 警 |
-| 重报警 | 八边形 ⬣ | 红 | 故 |
-
-| 联锁态 | 形状 | 颜色 | 文字 |
-|---|---|---|---|
-| 无联锁 | 无符号 | — | — |
-| 警告 | ▲ | 黄 | 警 |
-| 故障/跳闸 | ⬣ | 红 | 锁 |
-| 临时旁路 | ⬡ 虚线框 | 橙 | 旁 |
-
-> 为什么三重编码：色弱操作员分不出红绿，靠形状和文字也能判断；黑白打印的纸质记录照样读得懂【数据表 p5：indication by colour, shape and labels instead of by colour only】。
-
-## 2. FP_Motor 布局（分区）
-
-```
-┌───────────────────────────────────────────────┐
-│ ⬣  原料磨风机  Raw Mill Fan        N562_FN1_90 │ ← 头：状态符号 + EN/CN + TagNo
-│      当前状态：运行    运行时长：12:33:21        │
-├───────────────────────────────────────────────┤
-│ [启动] [停止] [复位]                            │ ← 命令按钮（本地/检修时置灰）
-│ 故障：运行中跳闸  →  信号 1632FN01.T1_H ①       │ ← 故障描述 + SigTag（①=可点击跳转）
-├───────────────────────────────────────────────┤
-│ 参数（在线可改）                                │
-│ T_StartMax[5s] T_StopMax[5s] T_RunMin[0s]       │ ← 延时类参数输入框
-│ T_Restart[0s] T_SafetyDb[1s] EnDOStop[关]       │
-├───────────────────────────────────────────────┤
-│ 所属组：G30 齿轮箱润滑   步号：2 停止步号：2      │ ← 组信息（数据表 p2）
-│ [→组面板] [→联锁Viewer]        仿真：关 ⚠        │ ← 双向超链接按钮 + 仿真指示
-└───────────────────────────────────────────────┘
-```
-
-分区规则（四块，从上到下）：**头部=身份、主体=状态和命令、参数区=现场可调、导航区=去哪儿**。所有面板同构，操作员学会一个就会全部。
-
-## 3. FP_Valve 布局
-
-FP_Motor 四区不变，主体区换成阀门专用：
-
-```
-├───────────────────────────────────────────────┤
-│ 开关阀： [开] [关] [中停(EnMid)]   状态符号 ⬣    │
-│          开到位●  关到位●                       │
-├───────────────────────────────────────────────┤
-│ 调节阀（EnLoop=TRUE 时显示）：                  │
-│   目标阀位 [====|----] 60%  （滑块/输入框）      │
-│   实际阀位 ▓▓▓▓▓▓░░░░  58%   偏差 2% ≤死区       │ ← 竖条+百分比+偏差
-│   模式：AUTO（MAN/CAS 按钮）                    │
-├───────────────────────────────────────────────┤
-│ 参数：T_OpenMax[10s] T_CloseMax[10s] DeadBand[2%]│
-│       T_DevMax[30s] EnPulse[关] T_Pulse[2s]      │
-└───────────────────────────────────────────────┘
-```
-
-## 4. FP_Group 组面板布局
-
-```
-┌───────────────────────────────────────────────┐
-│ ⬣  G30 齿轮箱润滑组  Gearbox Lube   （启/停/复位）│
-│ 状态：运行  设备 3/4 运行                        │
-├───────────────────────────────────────────────┤
-│ ⚠ 首报：N562_GB1_E02 运行中跳闸 ①               │ ← FirstFaultTag 大字+超链接（数据表 p2）
-│     发生时刻 14:22:07   保持/跳过：保持           │
-├───────────────────────────────────────────────┤
-│ 模式：连续/周期  T_CycleRun[10min] T_CycleIdle   │
-│ T_StepMax[30s] EnGrpHold[是]                     │
-├───────────────────────────────────────────────┤
-│ 设备： ●N562_GB1_E01  ●N562_GB1_E02 ⬣ ⬠E03 ...   │ ← 缩略清单（每个可点击）
-│ [→组状态Viewer]                    仿真：关 ⚠    │
-└───────────────────────────────────────────────┘
-```
-
-## 5. FP_Signal 联锁信号面板（数据表 p4 字段【核实】）
-
-```
-┌───────────────────────────────────────────────┐
-│ ⬣  1632FN01.T1_H  风机轴承温度 H               │
-│ 当前值 87.3℃   等级：故障                       │
-├───────────────────────────────────────────────┤
-│ 参数（在线可改）：                               │
-│ 类型[保护联锁] 警告阈值[75℃] 故障阈值[85℃]       │
-│ 警告延时[2s] 故障延时[1s] 启动禁止时间[60s]      │ ← 数据表 p4 全字段
-│ 临时旁路[关] 剩余[--]  （旁路仅在维修时允许）     │
-├───────────────────────────────────────────────┤
-│ 联锁设备：N562_FN1_90 ①（跳设备面板）            │
-│ [→联锁Viewer]                                   │
-└───────────────────────────────────────────────┘
-```
-
-## 6. 组状态 Viewer（画面模板）
-
-数据源：组 GrpOut + 16 槽位数组。布局=一张表：
-
-| 列 | 字段 | 备注 |
+| # | 要素 | 说明 |
 |---|---|---|
-| 步号 | StepNo/StepNoStop | 排序依据 |
-| 设备 | TagNo + Desc_CN | 单元格带超链接→设备面板 |
-| 状态 | 七态符号 | 三重编码 |
-| 联锁 | 无/警/锁/旁 | 取该设备 Sig 数组最高等级 |
-| 启停延时 | DelayStart/DelayStop | |
-| 运行时长 | RunTime | |
-| 仿真/调试 | EnSim/ChkPass 图标 | |
+| ❶ | 对象 Tag 名+描述 | |
+| ❷ | **POC 指示** | Seq/Cen/Loc |
+| ❸ | 对象状态指示 | |
+| ❹ | 启动/停止按钮 | 停机/关阀永远允许 |
+| ❺ | **切 POC 按钮** | Seq→Sequence / Cen→Central / Loc→Local |
+| ❻ | 调报警列表/事件列表 | |
+| ❼ | 报警确认 | 任一面板确认，经 GCC/PCC 双向传播 |
+| ❽ | FP Normal View | |
 
-表尾汇总行：`运行 3/4｜首报 N562_GB1_E02｜调试 8/10`。
-"运行时可增删改顺序"的可见性：任何设备 StepNo 参数修改下装后，本表行序自动重排【数据表 p2：viewer automatically updates】。
+电机默认视图还有：**Sim（整组仿真中，硬件信号忽略）/ Block（有联锁或信号被闭锁）/ 状态 / 报警指示 / 实际电流（额定%/实际值）**【04手册p40】。页签：Interlock / PCC / Alarm / Trend / Group【04手册p42】。
 
-## 7. 联锁 Viewer（画面模板）
+## 2. 图形元素族（流程画面上用）【核实-04手册p12-19】
 
-一台设备的全部联锁信号一览（数据表 p4 功能【核实】）：
-
-| 列 | 字段 |
+| 元素 | 内容 |
 |---|---|
-| 信号 | SigTag + 描述（超链接→信号面板） |
-| 类型 | 仅报警/启动禁止/操作联锁/保护联锁/保护性启动 |
-| 当前值 | 模拟量现值/数字量状态 |
-| 阈值 | 警告/故障阈值 |
-| 延时 | 警告/故障延时 |
-| 等级 | 无/警/锁（三重编码） |
-| 旁路 | Override 状态 + 剩余时间 |
+| **Drive**（消费者主力元素，aspect 名=消费者对象名） | 状态+POC+模式+报警；IndicationType 分 S1_（Triangle/Lollipop/Diamond/Rectangle/Arrow/OpenArrow/StealthArrow/Oval/Line/TiltTriangle）、C1_（MotM/Pump/Fan/RotaryFeeder/GearWheelPump/Valve/ManValve/AutoValve/Generator/Heater/BucketElev/Conveyor/EP/AirSlideOutlet）、C2_（Diverter/LouvreDamper/AirSlide/PropRoller/Damper/AirSlideShut+Inv 镜像版/ValveLevelInd 等）、C3_（Diverter/3WayValve） |
+| DriveCtrl | 控制信息+设定值直输；标签：操作模式（如 Setpoint External）/信号错误（信号质量）/偏差高-低/测量值闭锁-强制/测量值限值报警 |
+| DriveFBTxt | FB1/FB2 故障文本（正常位灰隐、异常位红字、报警位红框） |
+| DriveMCValue | 电机电流值 |
+| Process Symbols | 行业设备符号（斗提、管弯、磨机等，变色型） |
 
-表尾：`信号 8 个｜活动中 1｜旁路中 0`。**旁路列必须醒目**——维修期间临时 override 是事故高发点，数据表 p4 专门要求 viewer 显示临时 override。
+**状态色（官方）**【04手册p14-15】：OFF 就绪=灰；OFF 联锁未就绪=灰+红底黑叉；OFF 联锁+对象报警=灰+实红框；RUN=绿；RUN 带警告（如 PCC）=绿+橙框；RUN 带高电流警告=绿+红框。
+**标签（POC/模式）**：Sequence/Central/Local/Local Maintenance/Out of Service/Forced Run/Auto Mode/Manual Mode/External setpoint+Auto/Manual/Balancing Mode/Position/Run Direction/Operator Note/Blocked Interlock or Functional Back Signal【04手册p15】。
 
-## 8. 800xA Aspect 落地要点
+## 3. VCO 与 ASM（800xA 6.1 新图形体系）【核实-00手册p20-23 + 30手册】
 
-> 本节是把上面画的面板在 800xA 6.1.0 里做出来的路径。标【需实测确认】的步骤我没有现场环境验证，按此试探，不对再调。
+- **VCO（Visual Control）**：6.1 引入，基于 6.0 的 EffectItems；**三种显示模式**：Start/stop（启停细节）、Production（活动设备彩色高亮）、**ASM（异常工况管理）**；
+- **ASM 规范**：过程状态用**灰度**表示，**颜色只留给报警**——操作员一眼看到"哪里不对"；报警颜色使用一致且受约束；信息冗余编码（形状+颜色）；
+- VCO 支持 MinLib 过程状态报警抑制 + 800xA alarm shelving；
+- 主题：Minerals Standard / ASM Standard / VALE / Holcim（传统 GraphiXs 样式）；VCO 目前一个内置主题；**NLS 多语言**（描述/文本/报警消息按用户母语）；
+- 详细 VCO faceplate 见 01 总览手册（3BHF004109）"VCO Faceplates"章 + 30 手册（VCO GraphiXs User Guide）。
 
-1. **建 Aspect Object**：Control Builder 库树的 Aspect 节点下，给每个 FBT 建同名 Aspect（如 MOTOR_C 的 FP_Motor）【需实测确认菜单路径：Library → Aspect Objects → New】；
-2. **摆显示元素**：Aspect 编辑器里放 Text/Value Display/Push Button/Bar/椭圆等，逐个绑定到 FBT 的管脚/参数（绑定即"点名"到实例，800xA 自动把模板应用到每个实例）；
-3. **命令按钮**：Push Button 绑定 Cmd_Start 等 Bool 管脚，配"脉冲"行为（按下发单周期 TRUE）；
-4. **超链接**：显示元素支持跳转到另一个 Aspect/Display（父子双向：设备面板→组面板，组面板→设备面板）【需实测确认具体属性名，可能是 DisplayLink/AspectLink 类】；
-5. **参数在线修改**：输入框绑定 PAR 类型参数，在线可改（受操作员权限控制）；
-6. **Viewer 模板**：组/联锁 viewer 用 Workplace 的显示对象（列表/表格类）绑定组 GrpOut 与数组；若标准对象不够用，退一步用"流程画面 + 每设备一个小面板符号 + 点击弹大面板"的经典做法【需实测确认】；
-7. **形状元素**：三重编码的形状（方/圆/三角/八边/菱形/六边）用 Aspect 的基本图形拼，颜色和闪烁（Blink 属性）绑定状态表达式；闪烁频率【需实测确认】是否可配，不可配就用"颜色+文字"兜底；
-8. **命名**：Aspect 名 = FP_ + FBT 名；显示对象（Display）名 = DV_ + 用途，如 DV_GroupViewer。
+## 4. 三个 Viewer（官方列定义）
+
+| Viewer | 位置 | 列 | 来源 |
+|---|---|---|---|
+| **PCC Viewer** | 消费者面板内图标 | 一台消费者全部生效联锁一览表，实际原因**红行高亮**；点行跳信号面板 | 【00手册p33-36】 |
+| **Group Step Viewer** | 组面板顶部 Aspect Link | Object Name/Description/Status（含预选）/Step/Delay Time；默认只显预选步 | 【05手册p18-19】 |
+| **Group Status Viewer** | 组扩展面板 | Name/Description/Type/Status/Alarm/Intlk/Blk/Control/Mode；'+'展开子对象；点名跳面板 | 【05手册p20-21】 |
+
+**Viewer 前置条件**（Step Viewer）：Functional Structure 需先用 **Uploader** 灌入——对象名唯一 + Name Uploader 执行 + 应用已下载控制器 + OPC 数据可用【05手册p18】。
+
+## 5. 报警在画面上的表示【核实-04手册p13 + 00手册p21】
+
+- 图形元素报警/警告时背景从透明变报警处理色；tag 名显示受 EnableTagName 总控；
+- VCO ASM 模式灰度+报警色（§3）；
+- 面板报警列表（ExtendedInfo 位 2）/事件列表（位 4）按需开；
+- **报警确认双向传播**：组面板确认→经消费者→信号级【02手册p6】。
+
+## 6. Process Panel P800（现场操作面板）【核实-12手册 + 00手册p53】
+
+- BMI 标准符号库随 MinLib 安装；**经单一访问变量交换数据**；支持对象：AIS/AOS/DIS/DOS/AIC/AOC/DIC/DOC/MOT1/MOT1VVVF/MOT2/MOT2VVVF/MOTP/VLV1/VLVNO1/GROUP/DriveGroup/PREBIN；
+- 面板对象类型（V6 面板）：MOT1/MOT1_VVVF/MOT2/MOT2_VVVF/DAMPER/GATE/FAN/PUMP/VLV1/VLV1NO/ANALOG CONTROL VALVE/AIS/AIC/AOS/AOC/DIS/DIC/DOS/DOC/GROUP/DRIVE GROUP/PREBIN【12手册p6-31】；
+- 工程指南：Panel Builder 设置→控制器设置→报警事件设置→弹屏→访问变量→tag 编辑→数据类型→**tag 自动导入**→元件库→对象配置（combobox/faceplate 控制）【12手册p34-52】；
+- 公共功能：面板手动控制（命令+输入框）、状态与操作指示、模式选择、单访问变量数据交换【00手册p53】。
+
+## 7. CL 落地映射【CL 适配】
+
+| CL 设计 | 对齐官方 | 说明 |
+|---|---|---|
+| FP_Mot 八要素 | 00手册p19 八要素 | V1 的"四区"映射：头=❶❷❸、主体=❹❼❽、参数区=页签 Alarm/Interlock、导航=❻+viewer 链接 |
+| 三重编码 | 官方状态色+形状标签 | V1 七态表保留为 CL 简化版；官方规范以形状+标签+ASM 灰度为准则 |
+| FP_Sig | 官方信号面板（02手册） | 阈值/延时/联锁类型/方向/闭锁状态全显示 |
+| DV_StepViewer / DV_StatusViewer / DV_PCCViewer | 官方三 viewer | 列定义照抄；**上传 Functional Structure 步骤写进实施清单** |
+| 仿真指示 | 官方 Sim 标签 | 组仿真时全部成员显示 Sim |
+| 多语言 | 官方 NLS（`\|\|AE_NLS_`/`\|\|IL_NLS_` 前缀） | CL 全部 Txt 参数按前缀规范命名，现场可切语言 |
+
+## 8. V1→V2 关键差异
+
+| V1 自拟 | V2 官方 |
+|---|---|
+| 四区 ASCII 布局 | 八要素+页签结构 |
+| 七态形状表 | Drive 元素 IndicationType 体系（S1/C1/C2/C3 数十种）+官方状态色 |
+| 无 ASM 概念 | VCO 三模式+ASM 灰度/报警色分离 |
+| viewer 列自拟 | PCC/Step/Status 三 viewer 官方列定义 |
+| 无 Process Panel | P800 面板对象清单+工程指南 |
+| 无 NLS | 官方 NLS 前缀规范 |
 
 ## 9. 本篇结论
 
-面板四区（身份/状态命令/参数/导航）+ 一张三重编码表 + 两个 viewer（组状态、联锁）。操作员培训一句话：**看形状和字判断状态，点符号和链接找根因，参数区只改延时和阈值**。做画面时严格按 §8 步骤走，每步标注实测结果，把【需实测确认】逐条销项。
+CL 面板落地就三条：**①按八要素摆 FP；②流程画面用 Drive 元素族（形状+状态色）；③三个 viewer 列定义照抄+记得先跑 Name Uploader**。ASM 灰度规范是操作员体验的分水岭——颜色只给报警，别拿颜色表示生产过程状态。

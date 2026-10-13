@@ -12,7 +12,7 @@
 | 10-系统与工程配置 | 1 |
 | 20-DP通讯与设备功能块 | 13 |
 | 30-莱歇磨与连锁分析 | 6 |
-| 40-变量与功能块规范 | 12 |
+| 40-变量与功能块规范 | 13 |
 | 50-实施与分组程序 | 2 |
 | 60-核对复查与整改 | 4 |
 | 70-工具与工作方法 | 5 |
@@ -64,16 +64,17 @@
 |---|---|---|---|---|---|
 | [ABB800xA VAR_FUN对比与导入规则](40-变量与功能块规范/ABB800xA_VAR_FUN对比与导入规则.md) | 2026-07-25 | 规则 |  | [VAR表,FUN表,导入] | VAR/FUN表新旧对比及导入规则 |
 | [PLC_ST编程检查与命名参考（GitHub开源实践）](40-变量与功能块规范/PLC_ST编程检查与命名参考_20260914.md) | 2026-09-14 | 规则 |  | [PLC,IEC61131-3,检查清单,命名规范,FBD,AI辅助编程] | ST/FBD静态检查清单、AI改动回归核对项、OSCAT命名注释规范、IO点表映射四步法（8个GitHub开源项目提炼） |
-| [MinLib拆解_00_总览与库架构设计](40-变量与功能块规范/MinLib拆解_00_总览与库架构设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,水泥,库架构,ControlConnection] | MinLib公开核实事实（数据表pN出处）+CL库三层架构+与TAYNINH_LIB差异+套件索引 |
-| [MinLib拆解_01_公共基础设计](40-变量与功能块规范/MinLib拆解_01_公共基础设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,STRUCT,命名规范,参数表] | CL库命名规范+CC_EqCmd/CC_EqStat/CC_SigOut/CC_SigIn/CC_Group五结构体全字段+参数表六要素+编译防错清单 |
-| [MinLib拆解_02_电机功能块拆解](40-变量与功能块规范/MinLib拆解_02_电机功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,MOTOR_C,状态机,联锁,报警,仿真] | MOTOR_C全解剖：五组管脚/21参数/S01-S09逻辑/七态状态机/三lock联锁/10条报警/10项调试检查 |
-| [MinLib拆解_03_阀门功能块拆解](40-变量与功能块规范/MinLib拆解_03_阀门功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,VALVE_C,双命令互锁,调节阀] | VALVE_C双模式（开关/调节）：七状态机+双命令互锁三重防护+行程超时+阀位偏差闭环+10条报警 |
-| [MinLib拆解_04_组功能块拆解](40-变量与功能块规范/MinLib拆解_04_组功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,GROUP_C,顺序启停,首报,SEL_C,主备] | GROUP_C（16槽/前沿法步进/周期/首报锁存/汇总）+SEL_C主备路由；保留CON/COFF接口 |
-| [MinLib拆解_05_Faceplate与Viewer设计](40-变量与功能块规范/MinLib拆解_05_Faceplate与Viewer设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,faceplate,viewer,三重编码,Aspect] | 七态三重编码表+四台面板分区布局（ASCII图）+组状态/联锁viewer列定义+800xA Aspect落地8步 |
-| [MinLib拆解_06_报警处理框架](40-变量与功能块规范/MinLib拆解_06_报警处理框架.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,报警,AlarmCond,抑制,首报,standby] | 四条抑制规则（组停/启动/本地/备用降级）公式化落地+首报五级导航+组/信号报警清单+抑制矩阵 |
-| [MinLib拆解_07_仿真与调试检查框架](40-变量与功能块规范/MinLib拆解_07_仿真与调试检查框架.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,仿真,softcontroller,commissioning,CHK_C] | 三级仿真+硬件屏蔽路径+四课培训场景；CHK_C检查状态机+组级进度+升级重验机制 |
-| [MinLib拆解_08_ST代码骨架与FBD对照](40-变量与功能块规范/MinLib拆解_08_ST代码骨架与FBD对照.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,ST,分段编号,中文注释,MOTOR_C,GROUP_C] | MOTOR_C/GROUP_C可直接抄的ST骨架（S01-S09+中文逻辑对照表）+布尔连锁示例+FBD连线清单+规则自检 |
-| [MinLib拆解_09_实施步骤与核对清单](40-变量与功能块规范/MinLib拆解_09_实施步骤与核对清单.md) | 2026-10-13 | 实施说明 |  | [MinLib,800xA,建库,核对清单,编译错误,FAT] | 七步实施路线（每步门禁）+五套核对清单+9类编译错误速查+10项待实测跟踪 |
+| [MinLib拆解_00_总览与库架构设计](40-变量与功能块规范/MinLib拆解_00_总览与库架构设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,水泥,库架构,POC,GCC,PCC,LCC,VCO,CCF] | V2官方版：27份手册重写——CM类型/九大类对象/四控制连接/POC四模式/GCC组行为/LCC回路/CCF，CL库三层架构与V1→V2差异 |
+| [MinLib拆解_01_公共基础设计](40-变量与功能块规范/MinLib拆解_01_公共基础设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,PCC,GCC,LCC,IntlkType,Std_Type,仿真,命名规范] | V2官方版：四总线机制、PCC联锁参数全表（IntlkType九项/IntlkDir五组/StartInhibit/LocStartOverride）、Std_Type报警禁用矩阵、仿真安全红线、Parameter Error |
+| [MinLib拆解_02_电机功能块拆解](40-变量与功能块规范/MinLib拆解_02_电机功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,MOT1,MOT2,MOTP,电机,参数表,联锁,报警,仿真,POC] | V2官方版：电机族五对象选型、MOT1全77参数、MOT1Data四组件字段、IC/IB/IA/PD联锁语义、POC×Mode命令矩阵、Faceplate页签、报警消息结构与停止原因码、组级仿真 |
+| [MinLib拆解_03_阀门功能块拆解](40-变量与功能块规范/MinLib拆解_03_阀门功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,VLV1,VLVNO1,Actuator,MOTP,阀门,FBErrorMode,联锁] | V2官方版：阀门族选型、VLV1全71参数、OneCoil/CutOrd/FBErrorMode位掩码/SamePosDelay机构层机制、双位反馈矛盾保护、CL落地映射 |
+| [MinLib拆解_04_组功能块拆解](40-变量与功能块规范/MinLib拆解_04_组功能块拆解.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,Group,SubGroup,DriveGroup,GrpCycleCtrl,Prebin,STW,GroupConnect,步号,预选,主备] | V2官方版：组族七对象选型、GROUP全34参数、步号三段规则（1-999/1001-1999/2001-2999）、Step/Status Viewer列定义、周期组/预选/预告/GroupConnect、F163 GROUP1迁移 |
+| [MinLib拆解_05_Faceplate与Viewer设计](40-变量与功能块规范/MinLib拆解_05_Faceplate与Viewer设计.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,faceplate,VCO,ASM,GraphiXs,ProcessPanel,viewer,图形元素] | V2官方版：Faceplate八要素、Drive图形元素族与状态色、VCO三模式与ASM灰度规范、PCC/Step/Status三viewer列定义、P800对象清单与工程指南 |
+| [MinLib拆解_06_报警处理框架](40-变量与功能块规范/MinLib拆解_06_报警处理框架.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,报警,AlarmTr,StdType,首报,PCC,ASM,事件列表] | V2官方版：报警禁用三条件与Std_Type矩阵、AlarmTr五档、状态门控报警生成、联锁不是报警原则、双向确认与首报、消息结构[POC]+[MODE]+[STATUS]+[STOP REASON]+Blk |
+| [MinLib拆解_07-仿真与调试检查框架](40-变量与功能块规范/MinLib拆解_07_仿真与调试检查框架.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,仿真,SimulationMode,ParameterError,CCF,CommissioningCheck,EBase,报告] | V2官方版：组级强制仿真/0.8高限电流/MCC测试/热启动初值/断总线红线、6.1.4周期组仿真坑、CCF全量（5步工作流/5结果/3类别/EBase宏/权限/自定义/Excel报告） |
+| [MinLib拆解_08_ST代码骨架与FBD对照](40-变量与功能块规范/MinLib拆解_08_ST代码骨架与FBD对照.md) | 2026-10-13 | 开发说明 |  | [MinLib,800xA,ST,分段编号,中文注释,MOT_C,GRP_C,IC,IB,IA,PD,步号] | V2官方版：MOT_C对齐MOT1的ST骨架（S01-S10+中文逻辑对照表）、GRP_C对齐GROUP骨架（步号三段/SeqStart/STW/ChngOver）、IC/IB/IA/PD布尔连锁示例、官方管脚名FBD清单 |
+| [MinLib拆解_09_实施步骤与核对清单](40-变量与功能块规范/MinLib拆解_09_实施步骤与核对清单.md) | 2026-10-13 | 实施说明 |  | [MinLib,800xA,建库,核对清单,Tutorial,afw,CCF,编译错误,U项销项] | V2官方版：八步实施路线、Tutorial afw导入流程、Viewer上传前置、CCF五步（F163无EBase降级）、五套核对清单、编译错误速查、U1-U10销项表 |
+| [MinLib官方手册索引_27份台账](40-变量与功能块规范/MinLib官方手册索引_27份台账.md) | 2026-10-13 | 数据表 |  | [MinLib,800xA,官方手册,台账,文档号,3BHS,Tutorial,afw] | MinLib Documentation 27份官方PDF文档号/版次/页数/用途台账+检索地图+afw教程工程说明 |
 
 ## 50-实施与分组程序
 

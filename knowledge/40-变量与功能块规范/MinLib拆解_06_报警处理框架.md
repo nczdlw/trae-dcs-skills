@@ -1,114 +1,115 @@
 ---
-title: MinLib拆解复用-报警处理框架
+title: MinLib拆解复用-报警处理框架V2（官方对齐）
 date: 2026-10-13
 project: F163
 type: 开发说明
 device: ABB 800xA
-tags: [MinLib,800xA,报警,AlarmCond,抑制,首报,standby降级,800,500]
-summary: MinLib四条报警规则核实与落地：组停抑制/启动抑制/本地自动确认/standby降级+首报转发；AlarmCond架构；三类功能块报警清单模板
-source: 数据表 p5 + ABB官网2019 + F163规则总纲 §5.9
+tags: [MinLib,800xA,报警,AlarmTr,StdType,首报,PCC,ASM,事件列表]
+summary: V2：官方报警体系全量——报警禁用三条件与Std_Type矩阵、AlarmTr五档处理、状态门控报警生成、联锁不是报警原则、首报与双向确认、消息结构与ALP后缀、CL落地映射
+source: 04 Consumer手册§2.4/§2.5 + 02 Basic手册p6-7 + 00产品指南§2 + 05手册
 ---
 
-# 06 报警处理框架
+# 06 报警处理框架（V2）
 
-> MinLib 报警体系是它区别于普通库的核心之一。规则全部来自数据表 p5【核实】，落地方式是【自拟】。
-> 项目现状：F163 用 `AlarmCond`（Severity 800 重报警 / 500 警告，不支持 CondName）【F163 §5.9】——CL 库沿用同一底座，不引新块。
+> **V2 变更**：全部改为官方手册内容。最重要的纠偏：**联锁本身不产生报警，产生联锁的过程条件（信号）才报警**——V1 把联锁当设备报警是错的。
+> 页码标注：[04手册pN]=Consumer Objects，[02手册pN]=Basic Objects，[00手册pN]=产品指南。
 
-## 1. 四条报警规则（核实 → 落地对照）
+## 1. 官方报警体系总览【核实-04手册p5-6】
 
-| # | MinLib 规则【核实，数据表 p5】 | CL 库落地 |
-|---|---|---|
-| R1 | 父对象停止 → 只报活动父的报警（组停=设备报警不弹） | AlmEnable 串联 `Grp.GroupActive` |
-| R2 | 父对象启动中 → 启动报警抑制期 | AlmEnable 串联 `NOT (Grp.GroupStarting AND InInhibit)` |
-| R3 | 本地控制模式 → 自动确认 | `Local AND EnAckLocal` → 报警自动确认（不打断操作员） |
-| R4 | standby 消费者 → 自动降低严重度 | `EnStandby` → Severity 由 800 降 500（或按参数全抑制） |
-| R5 | 首报 + 最高优先级报警 → 转发到 consumer 和 group | 设备级 FirstFault 锁存 + 组级 FirstFaultTag 锁存（04 文档 §6） |
-| R6 | 2019 新版：按过程状况自动降级 + 报警形状/颜色冗余编码 | 面板三重编码（05 文档 §1）；"过程状况"降级先落 R4，细化的按工况降级留二期 |
-
-## 2. 抑制逻辑公式（每个 FBT 内统一）
-
-```
-(* 抑制总线：任何一条为 TRUE，对应报警不进报警清单 *)
-Inhib_GroupStop   := NOT Grp.GroupActive;                    (* R1 *)
-Inhib_Starting    := Grp.GroupStarting AND (T_Now < Grp.StartInhibitEnd); (* R2 *)
-Inhib_Local       := Local_Eff AND EnAckLocal;               (* R3 *)
-
-(* 每条报警的使能 *)
-AlmEnable[i] := Cond[i] AND NOT Inhib_GroupStop AND NOT (Inhib_Starting AND AlarmInStartInhibit[i]);
-```
-
-- `Grp.StartInhibitEnd`：组启动开始时刻 + `T_StartInhibit`（组参数，默认 = T_StepMax×2+5s，覆盖最慢两步）；
-- `AlarmInStartInhibit[i]`：该报警是否属于"启动瞬态类"（A6 启动被禁止、A7 反馈闪断、A5 过程联锁、SIG 的警告级）——TRUE 的才被启动抑制；**重报警（启动失败/跳闸）永不被抑制**；
-- R3 自动确认的实现：`AlarmCond` 的 Ack/Enable 引脚组合【需实测确认 6.1.0 AlarmCond 是否有 Ack 引脚；没有就用"Enable=FALSE 时报警根本不产生"的等效做法】。
-
-## 3. 严重度与文本
-
-| 项 | 规则 |
+| 机制 | 官方规则 |
 |---|---|
-| 重报警 Severity | 800（跳闸/失败类，必须人工确认）【F163 §5.9】 |
-| 警告 Severity | 500（异常但未停机）【F163 §5.9】 |
-| standby 降级 | 800→500；参数 `EnStandbyAlmMode`：0=降级 1=全抑制 |
-| 文本 | EN+CN 双段：`Start fail / 启动失败 - <TagNo>`；AlarmCond 不支持 CondName【F163 §5.9】，动态部分（TagNo）靠消息体拼接或静态化，**拼接可行性需实测确认**；不行就每条报警一个静态文本实例 |
-| 形状冗余 | 报警符号必须带形状（▲/⬣），不只变色（05 文档 §1） |
+| 报警禁用（按工况） | 三条件：**组活动或停止 / 消费者活动或停止 / 消费者远程或本地**（细化见 §2 Std_Type 矩阵） |
+| 双向确认 | AIS/DIS ↔ Consumer/Group 任一面板确认；组面板确认下传到信号级；Local 控制时自动确认 |
+| 首报检测 | 对象+全部联锁信号的首报检测，首报信号 tag 显示在消费者/组面板，带链接按钮 |
+| 启动报警抑制 | 可选的 start-up alarm inhibits（针对动态过程信号，如启动电流） |
+| 报警转发 | 信号报警自动转发到消费者 |
+| 动态优先级 | Dynamic alarm priority control（AlarmTr/IndTr） |
+| Electrical 接口报警 | 3 静态（availability/overload/trip/emergency stop 选三）+最多 4 动态（run x/y 反馈、位置限位、速度开关）+1 控制电压监视+4 IO 板状态 |
 
-## 4. 三类功能块报警清单模板
+## 2. 报警禁用矩阵（Std_Type）【核实-02手册p6-7】
 
-> 电机/阀门明细见 02/03 文档 §7，这里给"组 + 通用"补齐，并统一六要素：**触发/延时/Severity/文本/抑制/转发**。
-> 转发列：C=转发 consumer（设备面板），G=转发 group（组面板首报），V=进 viewer。
+| 设置 | 规则 |
+|---|---|
+| `cBMI.Std_Type = 0`（默认） | 电机未运行 / NC 阀关闭 / NO 阀开启 / 组未启动 → 信号报警自动禁用 |
+| `cBMI.Std_Type = 1` | 同 0，但组已启动且消费者被预选时一律报警；**standby 预选的消费者报警优先级自动 Failure→Warning** |
+| `PCCAEListFrcEn = true` | 关闭自动禁用（用于料位等需独立报警的信号） |
 
-### 4.1 组级报警（GROUP_C）
+## 3. 报警生成门控（官方硬规则）【核实-04手册p23】
 
-| # | 名称(EN/CN) | 触发 | 延时 | Sev | 抑制 | 转发 |
-|---|---|---|---|---|---|---|
-| G1 | Group start fail / 组启动失败 | 启动过程首报设备未 RUN | T_StepMax | 800 | 无（永不被抑制） | G,V |
-| G2 | Group stop fail / 组停止失败 | 停止过程设备未停 | T_StepMax | 800 | 无 | G,V |
-| G3 | Group fault / 组故障 | 运行中任一设备 Fault | 0 | 800 | 无 | G,V |
-| G4 | First fault / 首报 | 锁存 FirstFaultTag 时刻 | 0 | 800 | 无 | G,V |
-| G5 | Equip standby active / 备用设备在运 | 主设备故障切备 | 0 | 500 | R1 | C,G |
-| G6 | Cyclic idle / 周期间歇 | 进入 T_CycleIdle | 0 | 事件 | R1 | V |
-| G7 | Local mode / 组就地 | 组本地操作 | 0 | 事件 | — | V |
-| G8 | Simulation active / 组仿真中 | EnSim=TRUE | 0 | 事件 | — | V |
+**报警只在以下状态产生**：
 
-### 4.2 信号级报警（SIG_C）
+| 对象 | 产生报警的状态 |
+|---|---|
+| MOT1/MOT2/MOTP/MOT1_VVVF | **运行中或启动中** |
+| VLV1 | **阀开** |
+| VLVNO1 | **阀闭** |
 
-| # | 名称(EN/CN) | 触发 | 延时 | Sev | 抑制 | 转发 |
-|---|---|---|---|---|---|---|
-| S1 | Warn limit / 警告值 | 超 ThrWarn | DelayWarn | 500 | R1/R2/R3/设备 MAINT | C,V |
-| S2 | Fault limit / 故障值 | 超 ThrFlt | DelayFlt | 800 | R1/设备 MAINT | C,G,V |
-| S3 | Override active / 旁路中 | Override=TRUE | 0 | 事件 | — | C,V |
-| S4 | Override expired / 旁路到期 | OvrdLeft 到 0 | 0 | 事件 | — | C,V |
-| S5 | Sensor fault / 传感器故障 | 信号超量程/断线（AI） | T_FltDb | 800 | 设备 MAINT | C,V |
+推论：设备停止期间的"过程异常"不弹设备报警——这正是 Std_Type 0 的细化。**联锁（IC/IB/IA/PD）不是报警**：联锁动作只在事件列表留记录，进操作员报警清单的是**信号对象上**的那个过程条件（高温/低压/无流量）【04手册p23】。
 
-### 4.3 抑制规则适用矩阵
+## 4. AlarmTr 五档处理【核实-04手册p23】
 
-| 报警类 | R1 组停抑制 | R2 启动抑制 | R3 本地确认 | R4 standby |
-|---|---|---|---|---|
-| 启动/停止失败、跳闸、首报 | ✗ 永不 | ✗ 永不 | ✗ 永不 | ✗ 不降 |
-| 过程联锁、警告值 | ✓ | ✓（仅瞬态类） | ✓ | ✓ 降级 |
-| 旁路、就地、检修、仿真 | — 事件 | — | — | — |
+| 值 | 行为 |
+|---|---|
+| 3（默认） | 未确认报警 "Failure" |
+| 2 | 未确认报警 "Warning" |
+| 1 | 自动确认报警 "Warning" |
+| 0 | 仅事件 |
+| -1 | 不产生报警/事件 |
 
-## 5. 首报链路（两级导航，数据表 p2/p4【核实】）
+- AlarmTr 在 Control Builder 里对所有对象可改；类似 AI/DI 对象的 AlarmTr/LimTr；
+- 未用 NLS 时报警文本自动加优先级后缀：ALP1/ALP2→Warning、ALP3→Failure（常量 cBMI.AE.ALP1_SubTxt 等，NLS Resource Manager 里也定义）；
+- **AlarmTr 就是 F163 项目 Severity 800/500 的官方对应**：800↔3/2（Failure/Warning 未确认），500↔1（自动确认 Warning）【F163 §5.9】。
 
-```
-设备故障/联锁越限
-  → 设备锁存 SigTag（哪个信号惹的）+ FirstFault=TRUE
-  → 组锁存 FirstFaultTag（哪个设备惹的，按 StepNo 取最前）
-  → 组面板大字显示 FirstFaultTag，点击 → 设备面板
-  → 设备面板显示 SigTag，点击 → 信号面板
-  → 信号面板显示阈值/延时/类型/旁路状态
-```
+## 5. 消息结构（事件列表）【核实-04手册p49-51】
 
-五步之内从"组停了"定位到"哪个信号的哪个阈值"，全程鼠标点击，不翻代码。
+**结构**：`[POC] + [MODE] + [STATUS] + [STOP REASON] + Blk: + [BLOCK LIST]`
 
-## 6. 落地检查清单
+- POC：Seq / Cen / Loc / Out
+- MODE：Aut / Man / Mtc / Frc
+- STATUS：Starting / Run / Off
+- STOP REASON：QSP / SSP / CSP / FSP / PSP / IOS / ME / SQX / IC / IB1-4 / IA / PD / PCC-IC / PCC-IB / PCC-IA / PCC-PD（全表见 02 文档 §7）
+- BLOCK LIST：- / IB1-4 / IA / FB1 / FB2 / PD（面板闭锁中）
 
-1. [ ] 每个 FBT 内 AlarmCond 实例数 = 报警清单条数，实例在 Code 段被调用（防 Warning 1542【F163 §5.5】）
-2. [ ] Severity 只用 800/500 两档，事件类用 SimpleEventDetector（停止事件需手动反逻辑 + prev_running 末尾更新【F163 §5.9】）
-3. [ ] 每条报警按 §2 公式接抑制总线，不许有"裸"报警
-4. [ ] 首报锁存/清除逻辑与 04 文档 §6 一致
-5. [ ] 面板报警符号带形状（05 文档 §1）
-6. [ ] AlarmCond 的 Ack 引脚、消息文本拼接能力——【需实测确认】后回填本节
+报警文本参数：M1/M2/M3→各 Txt；Local Stop→LcbStopTxt；Contactor Fault→FdBckTxt；FB1/FB2 Fault→FB1Txt/FB2Txt；FB 类未用 NLS 时加后缀 On/Trip/Off/Frc（FBTime 后未 true / 运行中变 false / FBTime 后未 false / 停止时变 true）【04手册p51】。
 
-## 7. 本篇结论
+## 6. PCC Viewer（报警/联锁一览）【核实-04手册p24-27】
 
-报警框架=**四条抑制规则（R1~R4）+ 一条首报链路 + 两档严重度**。写代码时每条报警先过 §2 的抑制公式再过 §4.3 的矩阵，两个都过才允许接 AlarmCond。目标：操作员在报警清单里看到的每一条，都是"现在真该处理的"。
+- 按**联锁类型+启动方向**分类显示一台消费者全部联锁条件；无联锁定义的信号归 "Unassigned" 组（其报警在图形上显示但不影响操作）；
+- 显示实际状态、被禁用的联锁、被强制/闭锁的信号；
+- 过滤选项：只看使能 / 只看活动 / 只看当前方向 / 显示全部方向选项（默认只显 X/Y 和 FB）。
+
+## 7. 画面表示【核实-04手册p13 + 00手册p20-22】
+
+- 图形元素报警/警告时背景变报警处理色；
+- VCO ASM：过程状态灰度+颜色只给报警+冗余编码（形状+颜色）；
+- 报警列表（红按钮）/事件列表（绿按钮）：**事件列表=全部历史（事件+报警）；报警列表=仅当前活动报警**；从面板打开的列表只显示该对象的【04手册p21-22】。
+
+## 8. CL 落地映射【CL 适配】
+
+| CL 设计 | 对齐官方 | 说明 |
+|---|---|---|
+| 报警产生位置 | **信号对象（SIG_C）产生报警，设备对象不产生联锁报警** | 废弃 V1"设备10条报警含联锁"设计，改官方门控 |
+| 严重度 | AlarmTr 五档 | F163 现场 AlarmCond 映射：Failure→800、Warning→500、Event→SimpleEventDetector【F163 §5.9】 |
+| 禁用逻辑 | Std_Type 矩阵+PCCAEListFrcEn | 废弃 V1 自拟 Inhib_GroupStop/Starting 公式，改官方工程常量 |
+| 首报 | FirstOrMaxAETag/FirstOrMaxAEIndTr + 组面板链接 | V1 FaultTag/SigTag 字段被官方字段取代 |
+| 启动抑制 | 信号侧 IntlkStartInhibit（01 文档 §3.1） | V1 的"启动抑制期"改官方参数 |
+| 本地确认 | 双向确认+Local 自动确认 | 官方机制 |
+| 消息 | 官方消息结构 | CL 事件文本照抄结构，中文用 NLS 前缀 `\|\|AE_NLS_` |
+| 报警清单 | 官方各对象 Alarm&Event List | CL 按对象类型预置（电机=M1/M2/M3/LocalStop/Contactor/FB1/FB2；阀门=M1/LocalClose/OpnClsErr/FBOpn/FBCls；组=启停超时/联锁） |
+
+**F163 现场迁移要点**：现场 SignalInReal/SignalInBool 报警【F163 §4.5】→ 对标 AIS/DIS：报警在信号上产生；设备侧的 RS/process_lock 赋值【F163 §4.4】→ 对标 IB/IA 联锁输入（联锁不是报警）；现场 AlarmCond 的 CondName 不支持【F163 §5.9】→ 官方用 NLS Txt 参数+ALP 后缀实现等效。
+
+## 9. V1→V2 关键差异
+
+| V1 自拟 | V2 官方 |
+|---|---|
+| 设备 10 条报警（含联锁动作） | 报警只在运行/开（闭）态产生；**联锁不是报警** |
+| 自拟抑制公式 | Std_Type 0/1 + PCCAEListFrcEn 工程常量 |
+| Severity 800/500 两档 | AlarmTr 五档（3/2/1/0/-1） |
+| 自拟首报转发 | 官方双向确认+FirstOrMaxAETag |
+| 无消息结构 | [POC]+[MODE]+[STATUS]+[STOP REASON]+Blk: |
+| 报警清单自拟 10 条 | 官方按对象预置+文本参数化+ALP 后缀 |
+
+## 10. 本篇结论
+
+官方报警体系三句话：**①报警归信号（过程条件），联锁归设备（动作），两路都进事件列表但只有活动报警进报警清单；②报不报看设备状态（Std_Type 矩阵）；③多严重看 AlarmTr 五档**。CL 库按 §8 映射落地，现场 AlarmCond 用法不变（Failure=800/Warning=500），禁用逻辑从自拟公式换成官方工程常量。

@@ -1,148 +1,137 @@
 ---
-title: MinLib拆解复用-仿真与调试检查框架
+title: MinLib拆解复用-仿真与调试检查框架V2（官方对齐）
 date: 2026-10-13
 project: F163
 type: 开发说明
 device: ABB 800xA
-tags: [MinLib,800xA,仿真,softcontroller,培训,commissioning,调试检查,CHK_C]
-summary: 三级仿真设计（设备/组/系统）、硬件屏蔽路径、四个故障注入演练场景；CHK_C调试检查状态机、组级进度汇总、升级重验机制
-source: 数据表 p5 + ABB官网2019 + F163规则总纲 §3.6
+tags: [MinLib,800xA,仿真,SimulationMode,ParameterError,CCF,CommissioningCheck,EBase,报告]
+summary: V2：官方仿真机制（组级强制/0.8高限/MCC信号测试/热启动初值/断总线红线）、Parameter Error、CCF全量（5步工作流/5种结果/三类测试/EBase宏/权限/自定义/Excel报告）、CL落地映射
+source: 04手册p9 + 05手册p7-8 + 02手册p11 + 22 CCF手册3BHS835707 RevE 全文 + 80 Tutorial
 ---
 
-# 07 仿真与调试检查框架
+# 07 仿真与调试检查框架（V2）
 
-> MinLib 两件上线神器：**内置仿真**（数据表 p5：built-in simulation on soft controller；operator training with built-in simulation【核实】）和 **commissioning check framework**（官网 2019：缩短调试时间、跟踪现场进度、保证升级演进【核实】）。本篇给出两者的【自拟】落地设计。
+> **V2 变更**：仿真和调试全部改为官方机制。V1 自拟的 CHK_C 状态机被官方 **CCF（Commissioning Check Framework）** 取代——官方方案更强（多用户、时间戳、EBase 上传、Excel 报告、KPI 图）。
+> 页码标注：[04手册pN]=Consumer Objects，[05手册pN]=Group Objects，[02手册pN]=Basic Objects，[22手册pN]=CCF。
 
-## 1. 仿真模式设计
+## 1. 仿真模式（官方）【核实-05手册p7-8 / 04手册p9 / 02手册p11】
 
-### 1.1 三级仿真
+### 1.1 机制
 
-| 级 | 开关 | 范围 | 用途 |
-|---|---|---|---|
-| 设备级 | MOTOR_C/VALVE_C 的 `EnSim` | 单台设备 | 单点调试 |
-| 组级 | GROUP_C 的 `EnSim` | 整组（下传所有 Enable 设备） | 组态演练、操作员培训 |
-| 系统级 | 800xA soft controller 全仿真 | 整个控制器 | FAT/出厂测试、大规模演练 |
+- **组置仿真→属下全部消费者和基础对象强制仿真**（操作员站上设置）；
+- 仿真内容：反馈（run/open/close）和输入信号被仿真——**电机电流 MC 仿真到设定高限的 0.8 倍**；**命令和报警被禁用**；
+- **MCC 信号仍可逐对象测试**：面板维护页签勾 "Allow Alarm In Simulation"；
+- 基础对象（AIS/AIC/DIS/DIC）被阻塞并置正常值；
+- **热启动后初始行为**（可改）：AIS=量程 50% 且输入阻塞；DIS=正常位且输入阻塞；DOS/AOS 不考虑硬件连接，但**若输出对象接了硬件，所有改动仍写进硬件**。
 
-组级 EnSim 是源：置 TRUE 时组通过 EqCmds 把所有设备 `EnSim` 置 TRUE（链路：组 S01→EqCmds[i] 扩展字段 `EnSimDown`——加进 CC_EqCmd，01 文档 §2.1 补一个字段）。
+### 1.2 安全红线（官方原话级）
 
-### 1.2 硬件屏蔽路径（核心：仿真时一根输出都不许碰现场）
+1. **仿真前必须断开 Profibus、Modbus 及一切到现场的接口**；
+2. 仿真中消费者块会向所有 MCC 信号**写回 true**——像 ME 这类被多个块共用的信号，若只有部分块在仿真，其他块上的值可能因代码排序而错；**仿真只能在现场总线完全断开的控制器上启用**【05手册p8】。
 
-每个 FBT 的输出段（S07）统一模式：
+### 1.3 已知问题【核实-Tutorial 截图99】
+
+- **6.1.4 之前 GrpCycleCtr 的仿真不传递**（Simulation is not forwarded for GrpCycleCtr before 6.1.4）——F163 现场是 6.1.0，**周期组仿真要特别注意此坑**：GrpCycleCtrl 及其成员需逐个确认仿真状态，不能只置组。
+
+### 1.4 CL 落地【CL 适配】
+
+- 废弃 V1 自拟 EnSim/Sim_* 硬件屏蔽路径（官方不屏蔽输出，靠断总线）；
+- CL 库仿真设计=官方机制复刻：组级强制+0.8 高限电流+Allow Alarm In Simulation 复选框+热启动初值参数化；
+- 培训场景四课（启动失败/运行跳闸/联锁越限/主备切换）保留，但现象以官方面板（Sim 标签、PCC Viewer 红行）为准。
+
+## 2. Parameter Error 机制【核实-04手册p9-10 / 02手册p11】
+
+- CM 参数（本块或相连块）非法→图形元素和面板显示 **Parameter Error**——含义"应用程序需要修正"，**不是过程故障**；
+- 官方警告：**不是所有图形元素都显示 Parameter Error，也不是所有参数都做范围校验**；无 Parameter Error 提示≠功能正确——新程序必须测试验证；
+- CL 落地：参数表加范围检查+非法值触发 Parameter Error 指示；不静默钳位。
+
+## 3. Commissioning Check Framework（CCF 官方全量）【核实-22手册全文】
+
+### 3.1 定位与安装
+
+- MinLib **6.0.1 及以后**自带；需 **Engineering Base 6.7.0 + 800xA Integration 2.0**；无需额外安装；
+- 预置覆盖所有类型信号、消费者和 MinLib 元素的测试集，**可按项目调整扩展**；
+- 只对工程师用户可见（操作员不打扰）【22手册p3-4】。
+
+### 3.2 五步工作流【核实-22手册p4】
 
 ```
-(* 仿真隔离：所有物理输出只在本设备非仿真时写 *)
-IF NOT EnSim THEN
-    物理DO_Run  := DO_Run_Calc;
-    物理DO_Stop := DO_Stop_Calc;
-    物理AO_Out  := AO_Out_Calc;
-ELSE
-    物理DO_Run  := FALSE;      (* 仿真=输出强制关断 *)
-    物理DO_Stop := FALSE;
-    物理AO_Out  := 0.0;
-END_IF;
+1) Edit Mapping（EBase 信号 ↔ 800xA 检查项映射）
+2b) Create Aspects（在 Control Structure 实例上建 Commissioning Data 属性aspect）
+2c) Set Visible Test Cases（按 EBase 定义过滤实际信号）
+3) Record Test Results（调试期间在面板记录结果）
+4) Upload Data from 800xA to EBase（上传）
+5) Create / Update Excel Report（出报告）
 ```
 
-- 输入侧（S02）反向替换：`RunFb_Eff := EnSim ? Sim_RunFb : RunFb_DB;`
-- **双保险**：面板仿真指示（⚠）+ 组级 GrpOut 里带仿真计数，任何设备仿真中在组面板和总貌上可见；
-- 掉电保持：`EnSim` 是否 retain【需实测确认】——若不 retain，断电重启自动退出仿真（更安全，推荐）；若 retain，启动段加"上电仿真提醒"事件。
+### 3.3 面板操作（800xA 内）【核实-22手册p4-7】
 
-### 1.3 故障注入演练场景（培训四课）
+- 所有信号/消费者/组元素的扩展视图带 **"Commiss." 页签**：左列 Tests、右列 Commiss.Progress；
+- **左键**点右列单元格=写默认结果 "Ok"+当前日期+用户名；**右键**菜单选结果：**Ok / Failed / Simulated / Deferred / NotTested**（默认 5 种，可扩到 10 种）；
+- 左列右键 "Disable this test"=写 "NA"（不计入 100% 范围）并隐藏；底部出现 "Show all tests" 复选框可恢复；
+- 右键 "Edit…" 扩展输入：Detail Status 文本+可改状态/日期/用户；
+- **三类测试**（左列背景色区分，属性前缀 A/B/C/D/ECheck）：**硬件类**（回路测试、硬件设置、量程标定）、**软件类**（参数化、报警限值、时间设置、组启动）、**工艺类**（冷/热运行、外部控制回路）【22手册p6】。
 
-| 课 | 场景 | 操作 | 学员应看到 |
-|---|---|---|---|
-| 1 | 启动失败 | 组启动，某设备 EnSim+Sim_RunFb=FALSE | 启动超时报警 A1→组首报→组面板 tag→超链接到设备 |
-| 2 | 运行中跳闸 | 运行中置 Sim_Fault=TRUE | A3 报警→状态 FAULT→组 G3→首报链路→联锁 viewer 显示 |
-| 3 | 联锁越限跳停 | 信号仿真值超 ThrFlt | 信号 S2→设备跳停→A4/A5→viewer 旁路列状态 |
-| 4 | 主备切换 | SEL_C 主设备 Sim_Fault | 自动切备→G5 备用在运→旧主 FirstFault 锁存 |
+### 3.4 EBase 宏（CommissioningStateUpdate）【核实-22手册p8】
 
-每课配"期望现象清单"，学员对照打勾——培训记录直接进调试检查档案（§3）。
-
-### 1.4 仿真纪律（红线）
-
-1. 仿真标志**上画面**：任何设备/组仿真中，总貌和组面板有显著 ⚠ 标识；
-2. **下载前全清**：09 文档核对清单有专列"所有 EnSim=FALSE"；
-3. 仿真参数（Sim_*）在线可改但**改后必须改回**，参数表里 Sim_* 默认值全部为安全态（FALSE/0/关位）；
-4. F163 现场纪律不变：未经仿真验证不得在线下载【F163 §3.6】。
-
-## 2. CHK_C 调试检查框架
-
-### 2.1 官网核实功能 → 落地
-
-| 官网 2019【核实】 | 落地 |
+| 区 | 功能 |
 |---|---|
-| 缩短调试时间 | 检查项预定义在库里，现场只执行不编写 |
-| 跟踪现场进度 | CHK_C 状态机 + 组级 ChkDone/ChkTotal 进度 |
-| 保证升级演进 | 检查项带库版本号，升级后重置待重验（§2.5） |
+| Prepare | **Delete Aspects**（清 800xA 配置，**已填结果会丢**）/ **Create Aspects**（按 Template Aspect 给 Control Structure 子对象建实例）/ **Set Available Properties**（把 EBase 里没有的信号置 NA 过滤）/ **Edit Mapping** |
+| Reporting | **Upload Data from 800xA**（General Properties 回读 EBase 属性，空值不上传）/ **Update Excel Report** |
 
-### 2.2 CHK_C 块设计
+宏用 Function 的 **800xAID 属性**映射到 800xA Aspect 对象；须在**已导出的对象**（Application/Plant Function 或 Diagram）上运行【22手册p8-9】。
 
-**管脚**
+### 3.5 存储与映射【核实-22手册p9-13】
 
-| 管脚 | 方向 | 类型 | 说明 |
-|---|---|---|---|
-| Cmd_Start | in | Bool | 开始当前检查项（脉冲） |
-| Cmd_Pass | in | Bool | 人工判定通过（脉冲） |
-| Cmd_Fail | in | Bool | 人工判定失败（脉冲，须填原因） |
-| Cmd_Skip | in | Bool | 跳过（脉冲，须填原因） |
-| Cmd_Abort | in | Bool | 中止（脉冲） |
-| ChkState | out | Int | 0 IDLE/1 RUNNING/2 PASS/3 FAIL/4 SKIP |
-| ChkStep | out | Int | 当前检查项号（1..N） |
-| ChkTotal | out | Int | 检查项总数 |
-| ChkNote | out | String[60] | 失败/跳过原因（人工输入） |
+- 检查项=General Properties 类别 Aspect（名 "Commissioning Data"）上的 **string 属性**；模板 Aspect 随系统扩展提供；
+- EBase 结构与 800xA 不同（EBase 每个信号是独立对象，800xA 一个 CM 含多信号）→ 用信号的 **"Typical Copy Merge Index" 属性**+宏设置表映射（如 ACheck_Run ↔ s_R）；该索引通常与应用导出模板用的是同一个【22手册p12-13】。
 
-**参数**：`LibVer`（String[16]，库版本，如 "1.0.0"）、`EnRec`（是否记录事件）。
+### 3.6 权限与可见性【核实-22手册p13-14】
 
-**状态机**：`IDLE --Cmd_Start--> RUNNING --Cmd_Pass--> PASS(记事件,Step+1,回IDLE)`；RUNNING 可 Cmd_Fail→FAIL（停留待处理）或 Cmd_Skip→SKIP 或 Cmd_Abort→IDLE；FAIL 后 Cmd_Start 重跑本项。
+- Classic PG2 面板：Commiss. 页签按 **"Application Engineer" 角色**过滤；改值需 **Tune 权限**；
+- VCO 面板：`FPCommissioningCheckTabVisible`：0=禁/隐藏，1=全员可见，2=仅 Application Engineer 可见。
 
-### 2.3 检查项库（预定义，每设备 10 项，内容见 02/03/04 文档 §10）
+### 3.7 自定义【核实-22手册p14-18】
 
-检查项存放在 CHK_C 外挂的"检查卡"（每 FBT 一份 MD 卡 + 面板上的当前项文字提示）：CHK_C 的 `ChkStep` 对应卡上第 N 项，面板显示当前项的"操作步骤+通过判据"，执行完人工按 Pass/Fail。
+| 改什么 | 在哪改 |
+|---|---|
+| 结果文本（可加第 6-10 种） | NLS Resource Manager：Library Structure → Preferences & Customizations → MineralsLib KPI Commiss. NLS（TestResult07-11 默认 disabled） |
+| 结果/类别背景色 | ResourceLibraries → MineralsLib KPI Commiss. Resources 的 brushes（TestResultxx_yy、Test_CatUnknown 等） |
+| 加检查项 | 对象类型的 Commissioning Data aspect Config View → Add Property After；**属性名必须以 ACheck_/BCheck_/CCheck_/DCheck_/ECheck_ 开头**（决定类别色和排序）→ 删旧建新 aspect → 扩 EBase 映射 |
+| 给项目自有库类型加 CCF | 对象类型建 "Commissioning Data"（Basic Property Properties/General Properties）+ Template Aspect Key；**每 Aspect 类别只允许一个 Template Aspect**；可从 Commissioning Data FullSet 拷贝 |
 
-```
-面板示意（调试模式）：
-┌───────────────────────────────┐
-│ 调试检查 3/10   [库版本 1.0.0]   │
-│ 本项：C3 启动超时               │
-│ 步骤：T_StartMax 设 2s，启动，   │
-│       不给运行反馈               │
-│ 判据：A1 启动失败报警出现，状态   │
-│       =FAULT                    │
-│ [通过] [失败+原因__] [跳过__]    │
-└───────────────────────────────┘
-```
+### 3.8 报告【核实-22手册p11/19-20】
 
-### 2.4 组级进度汇总
+- 模板 `Commissioning Progress Report.xlsx`（Configurations → Commissioning Progress Folder）；默认报信号回路检查进度+Load Tag 检查；
+- EBase "Progress Report (Functions)" 工作表数据→报告 "EBase Data" 表；**Named Ranges**（Definitions 表）：Area List/Area Names/Area Definitions（"Part Of" 前缀过滤）需按项目调；
+- 报告含数量+图表（KPI）；改工作表模板只向右加列保兼容；
+- **宏不支持数据透视表等高级 Excel 功能**（生成时会被删）——需要就手工拷 "EBase Data" 到第二个文件；
+- 图形化进度总览（00手册p50-51 Figure 26/27：CCF Tab + KPI Graph）。
 
-- 组扫描 16 槽位各设备的 ChkState：`ChkDone = count(PASS or SKIP)`、`ChkTotal = Σ 各设备项数`；
-- 组 viewer 加"调试"列（PASS✓/FAIL✗/进行中/SKIP-）；
-- 现场日报直接看组 viewer 底部：`调试 27/40｜失败 2｜跳过 1`——失败项双击跳该设备检查卡。
+## 4. CL 落地映射【CL 适配】
 
-### 2.5 升级重验机制（ensure upgrade evolution【核实】）
+| CL 设计 | 对齐官方 | 说明 |
+|---|---|---|
+| CHK_C 块 | **废弃**，改官方 CCF 机制 | 面板 Commiss. 页签+EBase 宏+Excel 报告比自拟状态机强一个量级 |
+| 检查项 | ACheck_/BCheck_/CCheck_ 前缀属性 | 硬件/软件/工艺三类；每对象类型预置（MOT1=Run/NotAvailable/Overload…） |
+| 结果 | Ok/Failed/Simulated/Deferred/NotTested | CL 中文 NLS：Ok=通过/Failed=失败/Simulated=仿真/Deferred=暂缓/NotTested=未测 |
+| 权限 | Application Engineer+Tune | 与现场用户角色体系对齐 |
+| 无 EBase 的项目 | 退化方案 | 只用面板页签记录（800xA 内集中存储仍有效），报告手工导出 General Properties |
 
-1. 每个 FBT 带 `LibVer` 参数；CHK_C 启动时比对"当前库版本"与"上次通过时的版本"（存事件/历史里）；
-2. 版本不一致 → 该设备全部 ChkState 重置 IDLE，viewer 显示"待重验"；
-3. 重验只跑**受升级影响的检查项**（升级说明里列出影响项号），不用全跑；
-4. 全部 PASS 后版本戳更新——升级闭环。
+**F163 现场注意**：F163 无 EBase（用 Excel+腾讯文档工作流）→ CCF 的 EBase 宏链路用不了，但 **800xA 内的 Commiss. 页签+集中存储+多用户仍可用**；报告侧退化为导出 General Properties。这是 CL 库复用官方 CCF 时必须接受的降级，写进 09 文档核对清单。
 
-### 2.6 检查记录
+## 5. V1→V2 关键差异
 
-- 每次 Pass/Fail/Skip 发一条事件（SimpleEventDetector，文本含 TagNo+项号+结果+原因【F163 §5.9】）；
-- 记录落 800xA 事件/历史库，调试报告按时间过滤导出【导出格式需实测确认】；
-- CHK 记录与报警记录分开类型，方便筛。
+| V1 自拟 | V2 官方 |
+|---|---|
+| EnSim 屏蔽硬件输出 | 官方不屏蔽输出，**先断现场总线** |
+| 无 MCC 测试概念 | Allow Alarm In Simulation 逐对象测试 MCC 信号 |
+| 仿真电流无定义 | MC 仿真到 0.8×高限 |
+| CHK_C 状态机 | CCF：面板页签+5 结果+3 类别+时间戳+用户+多用户 |
+| 无报告 | EBase 宏上传+Excel 模板报告+KPI 图 |
+| 无权限控制 | Application Engineer 角色+Tune 权限+VCO 开关 |
+| 检查项写死在文档 | 对象类型 aspect 属性+前缀类别，可在线扩展 |
 
-## 3. 仿真 × 调试联动（典型现场流程）
+## 6. 本篇结论
 
-```
-① 到场：soft controller 上电，整组 EnSim
-② 单机：逐台设备跑 C1~C10（仿真注入）
-③ 组态：CON 脉冲启组，验证顺序/首报/周期
-④ 联锁：信号仿真值扫阈值，验证 viewer 与抑制
-⑤ 培训：操作员过四课（§1.3）
-⑥ 摘仿真：逐个设备 EnSim=FALSE，核对清单打勾
-⑦ 真机：从 C1 重跑到全 PASS（真信号）
-⑧ 移交：viewer 调试列全 ✓，报告导出
-```
-
-## 4. 本篇结论
-
-仿真解决"**不敢动**"——软控制器上把故障演一遍，操作员见过才不怕；调试检查解决"**没验过**"——每台设备 10 项、每组一张 viewer、每次升级一次重验。两件都内置在库里，现场只执行不开发。CC_EqCmd 记得补 `EnSimDown` 字段（01 文档 §2.1）。
+官方两件套的用法：**仿真=组一键全仿+断总线保平安+面板维护页签测 MCC；调试=面板 Commiss. 页签随手记+定期上传出 Excel**。F163 没有 EBase，CCF 的 800xA 侧照样能用、报告侧降级——这比 V1 自拟的 CHK_C 实用得多。周期组仿真记住 6.1.4 前的坑（截图99）。

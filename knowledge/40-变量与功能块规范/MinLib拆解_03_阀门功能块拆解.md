@@ -1,188 +1,134 @@
 ---
-title: MinLib拆解复用-阀门功能块VALVE_C拆解
+title: MinLib拆解复用-阀门功能块VLV_C拆解V2（官方对齐）
 date: 2026-10-13
 project: F163
 type: 开发说明
 device: ABB 800xA
-tags: [MinLib,800xA,VALVE_C,阀门,开关阀,调节阀,状态机,联锁,报警,仿真]
-summary: VALVE_C全解剖：开关阀/调节阀双模式、七状态机、双命令互锁、行程超时、阀位偏差、10条报警、面板与调试检查
-source: 数据表 p2/p4/p5 + F163规则总纲 §4.3
+tags: [MinLib,800xA,VLV1,VLVNO1,Actuator,MOTP,阀门,参数表,FBErrorMode,联锁,报警]
+summary: V2：官方阀门族选型（VLV1/VLVNO1/Actuator/MOTP）、VLV1全71参数、VLV1Data结构、OneCoil/FBErrorMode/CutOrd等阀门特有机制、双位反馈矛盾保护、CL落地映射
+source: 04 Consumer Objects手册3BHS161557 RevD §8/§9/§10/§7
 ---
 
-# 03 阀门功能块 VALVE_C 拆解
+# 03 阀门功能块 VLV_C 拆解（V2）
 
-> 阀门块比电机块多两层难度：**双命令互锁**（开/关输出严禁同时带电）和**阀位闭环**（调节阀）。
-> 除标注【核实】外均为【自拟】。
+> **V2 变更**：全部改为官方手册内容。V1 自拟的"双命令互锁/行程超时/阀位偏差"在官方体系里都有对应机制且更细（FBErrorMode 位掩码、SamePosDelay、CutOrd…）。
+> 页码标注：[04手册pN] = Consumer Objects 手册第 N 页。
 
-## 1. 定位与双模式
+## 1. 阀门族选型【核实-04手册p195/215/233/160】
 
-| 模式 | 参数 | 适用 | 反馈 |
-|---|---|---|---|
-| 开关阀 | EnLoop=FALSE | 两位式气动阀/电动阀（挡板、闸板、排污阀） | DI_OpenFb / DI_CloseFb 到位行程开关 |
-| 调节阀 | EnLoop=TRUE | 阀门定位器+AO（喂料、风量调节） | AI_Pos 阀位反馈（0~100%） |
-
-一个块两种模式，切换只改参数；工程里给每个实例配 EnLoop，不复制代码。
-
-## 2. 管脚接口全表
-
-### 2.1 硬件 IO 组
-
-| 管脚 | 方向 | 类型 | 说明 |
-|---|---|---|---|
-| DI_OpenFb | in | DintIO/Bool | 开到位反馈 |
-| DI_CloseFb | in | DintIO/Bool | 关到位反馈 |
-| DI_Fault | in | DintIO/Bool | 阀门故障（限位故障/气源失压） |
-| DO_Open | out | DintIO/Bool | 开命令输出 |
-| DO_Close | out | DintIO/Bool | 关命令输出 |
-| AO_Out | out | RealIO | 调节阀开度命令（0~100，仅 EnLoop） |
-| AI_Pos | in | RealIO | 阀位反馈（0~100，仅 EnLoop） |
-
-### 2.2 命令组
-
-| 管脚 | 方向 | 类型 | 说明 |
-|---|---|---|---|
-| Cmd_Open | in | Bool | 开命令（脉冲） |
-| Cmd_Close | in | Bool | 关命令（脉冲） |
-| Cmd_Stop | in | Bool | 停止/中停命令（切断输出，仅 EnMid=TRUE 有效） |
-| Cmd_Pos | in | Real | 目标阀位（0~100，EnLoop 时由 PID/组给定） |
-| Cmd_Reset | in | Bool | 故障复位 |
-| Cmd_Maint | in | Bool | 检修挂牌 |
-
-### 2.3 联锁组（同 MOTOR_C 语义：true=锁定）
-
-Lock_Start / Lock_Process / Lock_Safety / O2_Perm，含义与 02 文档 §2.3 一致：启动禁止/过程跳停/安全跳停（经延时置故障）/输出允许。
-
-### 2.4 组接口组 / 2.5 信号接口组
-
-与 MOTOR_C 相同：EqCmd/CC 结构体 + Grp + Sig 数组 + SigIn 回读（01 文档 §2）。
-
-## 3. 参数表
-
-| 参数名 | 类型 | 默认值 | 范围/单位 | 在线可改 | 面板显示 | 中文说明 |
-|---|---|---|---|---|---|---|
-| T_OpenMax | Time | T#10s | 1~120s | 是 | 是 | 开行程超时（全开耗时，含余量） |
-| T_CloseMax | Time | T#10s | 1~120s | 是 | 是 | 关行程超时 |
-| T_FltDb | Time | T#500ms | 0~5s | 是 | 是 | 故障去抖 |
-| T_FbDb | Time | T#100ms | 0~2s | 是 | 是 | 到位反馈去抖 |
-| T_SafetyDb | Time | T#1s | 0~10s | 是 | 是 | 安全联锁确认延时 |
-| EnLoop | Bool | FALSE | — | 否 | 是 | 调节阀模式 |
-| EnMid | Bool | FALSE | — | 否 | 是 | 允许中停（三点控制） |
-| EnPulse | Bool | FALSE | — | 否 | 是 | 脉冲输出模式（输出脉宽 T_Pulse 后自断） |
-| T_Pulse | Time | T#2s | 0.5~10s | 是 | 是 | 输出脉冲宽度 |
-| DeadBand | Real | 2.0 | 0~10 % | 是 | 是 | 阀位控制死区（\|Cmd_Pos−AI_Pos\|≤此值不动作） |
-| T_DevMax | Time | T#30s | 5~300s | 是 | 是 | 阀位偏差超时（超差报警） |
-| EnSim | Bool | FALSE | — | 是 | 是 | 仿真开关 |
-| Sim_OpenFb | Bool | FALSE | — | 是 | 是 | 仿真开到位 |
-| Sim_CloseFb | Bool | TRUE | — | 是 | 是 | 仿真关到位 |
-| Sim_Pos | Real | 0.0 | 0~100 % | 是 | 是 | 仿真阀位 |
-| StepNo | Int | 0 | 0~99 | 是 | 是 | 组内启动步号——数据源在组 StepNoTab 数组，经 EqCmd 下发，本参数只读显示（04 文档 §3） |
-| StepNoStop | Int | 0 | 0~99 | 是 | 是 | 组内停止步号——源在组 StepNoStopTab |
-| Desc_EN/Desc_CN/TagNo | String | — | — | 否 | 是 | 描述与 tag |
-
-## 4. 内部逻辑分段（S01~S09）
-
-| 段 | 名称 | 干什么 | 实现 |
-|---|---|---|---|
-| S01 | 输入采集与去抖 | DI_OpenFb/DI_CloseFb/DI_Fault 去抖 | FBD：TDeb |
-| S02 | 仿真注入 | EnSim 替换反馈/阀位 | ST |
-| S03 | 模式判定 | LOCAL/MAINT/LOOP | ST |
-| S04 | 联锁汇总 | 同 02 文档 S04 | ST/FBD |
-| S05 | 命令仲裁 | 组命令/操作员/PID 优先级 | ST |
-| S06 | 状态机 | 见 §5 | ST（CASE） |
-| S07 | 输出驱动 | 开/关/AO，**含双命令互锁**，见 §6 | ST |
-| S08 | 报警生成 | 见 §7 | FBD：AlarmCond |
-| S09 | 统计与上报 | EqStat/开度统计 | ST |
-
-## 5. 状态机（七状态）
-
-| 状态 | 进入条件 | 输出 |
+| 官方对象 | 管什么 | 关键能力 |
 |---|---|---|
-| CLOSED | 上电/关到位 | DO_Open=FALSE, DO_Close=FALSE, AO=0 |
-| OPENING | CLOSED 收到开命令且允许 | DO_Open=TRUE（或脉冲） |
-| OPEN | 开到位确认 | 输出保持（调节阀：AO=Cmd_Pos 闭环） |
-| CLOSING | OPEN 收到关命令且允许 | DO_Close=TRUE（或脉冲） |
-| MID | OPENING/CLOSING 中收到 Cmd_Stop 且 EnMid | 双输出 FALSE，AO 保持 |
-| FAULT | 任一故障条件 | 双输出 FALSE，AO=0 |
-| LOCAL/MAINT | Local_Eff/Cmd_Maint | 双输出 FALSE |
+| **VLV1** | 常闭（NC）单向阀/执行器 | 1个MCC接口（Availability）；2个位置反馈（**同时到位=故障**，带延时）；1×IC+1×IA(Chain Auto)+2×过程联锁+1×PD；**单线圈/双线圈**（得电到位或持续带电）；开关次数累计 |
+| **VLVNO1** | 常开（NO）单向阀/执行器 | 结构同 VLV1，逻辑取反；累计"开→关"操作次数 |
+| **Actuator** | 调节阀（AO+位置测量） | 1个MCC接口；2个位置反馈（同时=故障）；**位置反馈开/关仿真（可配位置限值）**；方向性安全联锁+1设备联锁+方向性过程联锁；执行器速度监视+低速报警；位置偏差报警 |
+| **MOTP** | 电动阀/挡板（电机驱动） | 见 02 文档 §10：位置控制（内/外给定、脉冲/模拟两种执行、设定值限值、偏差报警） |
 
-状态转移要点：
-- OPENING 超 T_OpenMax 无开到位 → FAULT（开超时）；
-- CLOSING 超 T_CloseMax 无关到位 → FAULT（关超时）；
-- OPEN/CLOSED 收到**反向命令** = 正常切换（先无条件执行互锁见 §6）；
-- FAULT 退出：Cmd_Reset 且 Lock_Safety 未动作且反馈回到 consistent 状态（两个到位开关不能同时 TRUE）；
-- 调节阀模式没有 OPENING/CLOSING 状态机——只有 CLOSED(AI_Pos≤DeadBand)/OPEN(AI_Pos≥100−DeadBand)/MID(中间)/FAULT，运动由 S07 闭环驱动。
+**选型口诀：电磁阀/气动阀两位式 NC 用 VLV1、NO 用 VLVNO1；要连续阀位用 Actuator；电机驱动的闸板/挡板用 MOTP。**
 
-## 6. 双命令互锁（本节是阀门块的核心）
+## 2. VLV1 全参数表（71 项，官方原样）【核实-04手册p196-199】
 
-**铁律：DO_Open 和 DO_Close 任何时刻不得同时为 TRUE。** 三重防护：
+### 2.1 标识/结构/组接口（同 MOT1 模式）
 
-1. **软件仲裁**（S07 第一行）：`DO_Open := DO_Open AND NOT DO_Close;`——关优先（安全惯例：故障时往关的方向倒）；
-2. **互锁条件**：只有当前状态允许某方向才给对应输出；从 OPEN 直接收关命令时，先强制 DO_Open=FALSE 一个扫描周期再 DO_Close=TRUE（反向切换死区，防电弧）；
-3. **脉冲模式**（EnPulse=TRUE）：输出给 T_Pulse 宽脉冲后自动断，靠行程开关自保持，从根上消除长带电风险；
-4. **到位反馈矛盾保护**：DI_OpenFb 与 DI_CloseFb 同时 TRUE 超 T_FbDb → FAULT（限位开关故障，报警 A6）。
+| # | 参数 | 类型 | 说明 |
+|---|---|---|---|
+| 1-2 | Name / Description | string[24]/[40] | Tag 名（允许 . -，禁空格:;）/描述 |
+| 3 | IO | VLV1Data | in_out，每阀一个全局变量 |
+| 4-5 | Stw / Group | STWData / GrpDrvCon | 接 STW / GROUP |
+| 6 | GrpOpnStep | dint | 开步号 1..999，0=不参加组顺序 |
+| 7 | GrpClsStep | dint | 关步号 1001..1999，0=不参加 |
+| 8-9 | GrpOpnDelay / GrpClsDelay | time | 组顺序开/关延时 |
+| 10 | PreSelection | string[50] | 预选分配，语法同 MOT1（`P1&P2\|P3&N4`） |
 
-调节阀闭环（S07，EnLoop=TRUE）：
-```
-IF ABS(Cmd_Pos - AI_Pos) > DeadBand THEN
-    AO_Out := MIN(100, MAX(0, Cmd_Pos));   (* 简单位置式；需要调节品质时外接 PID 块 *)
-ELSE
-    AO_Out := AI_Pos;                       (* 死区内保持 *)
-END_IF;
-```
-> 位置式够用于大多数工艺阀门；要求高的回路（如窑喂料）按 F163 思路外接标准 PID，VALVE_C 只做执行层。偏差 \|Cmd_Pos−AI_Pos\|>DeadBand 持续超 T_DevMax → 报警 A7。
+### 2.2 IO/MCC
 
-## 7. 报警清单
+| # | 参数 | 类型 | 初值 | 说明 |
+|---|---|---|---|---|
+| 11-14 | IOStatus1-4 | dint | 0 | IO 板状态（4=串口） |
+| 15 | ME | bool | true | 主控制电压 OK，false 禁报警 |
+| 16 | M1 | bool | true | 单独控制电压信号1（默认 Availability） |
 
-| # | 报警名(EN) | 报警名(CN) | 触发条件 | 延时 | Sev | 备注 |
-|---|---|---|---|---|---|---|
-| A1 | Open timeout | 开超时 | OPENING 无开到位 | T_OpenMax | 800 | |
-| A2 | Close timeout | 关超时 | CLOSING 无关到位 | T_CloseMax | 800 | |
-| A3 | Trip in motion | 运动中跳闸 | 非全开全关位 DI_Fault | T_FltDb | 800 | |
-| A4 | Safety interlock | 安全联锁动作 | Lock_Safety 经 T_SafetyDb | T_SafetyDb | 800 | |
-| A5 | Process interlock | 过程联锁动作 | Lock_Process 动作 | 0 | 500 | |
-| A6 | Limit sw fault | 限位开关故障 | 两位移反馈同时有效 | T_FbDb | 800 | |
-| A7 | Position deviation | 阀位偏差 | 超差持续 | T_DevMax | 500 | 仅 EnLoop |
-| A8 | Start inhibited | 启动被禁止 | 锁定中收到命令 | T#2s | 500 | 组停时抑制 |
-| A9 | Local mode | 就地模式 | Local_Eff | 0 | 事件 | |
-| A10 | Maintenance | 检修挂牌 | Cmd_Maint | 0 | 事件 | |
+### 2.3 阀门机构（本节是阀门块的核心）
 
-## 8. 仿真模式
+| # | 参数 | 类型 | 初值 | 说明 |
+|---|---|---|---|---|
+| 17 | AlarmInClsPos | bool | false | true=阀在关闭位也产生报警 |
+| 18 | **OneCoil** | bool | true | **单线圈=true；false=双线圈**。false 时：FBCls 报警是 Trip，且 FBErrorMode=0 下 Trip 活跃期间不发关命令 |
+| 19 | FBinverted | bool | false | true=FBOpn=0 表示"开到位"（FBCls 同理）——常开型接线 |
+| 20 | FBOpnEn | bool | true | true=有开限位开关；**false=开到位反馈被仿真** |
+| 21 | FBOpn | bool | false | 开到位反馈信号 |
+| 22 | FBOpnTxt | string[35] | 工程常量 | 开到位故障文本（NLS `\|\|AE_NLS_`） |
+| 23 | FBClsEn | bool | true | true=有关限位；false=仿真 |
+| 24 | FBCls | bool | false | 关到位反馈 |
+| 25 | FBClsTxt | string[35] | 工程常量 | 关到位故障文本 |
+| 26 | FBTime | time | 10s | FBOpn/Cls 响应最大延时 |
+| 27 | **FBErrorMode** | dint | 工程常量 | 位掩码：**0=FBError 发 OrdCls**；仿真/动作细分：1=Full，2=OrdOpn 保持但非 RFS，4=OrdOpn，8=OrdCls，16=RFS Opn，32=RFS Cls，64=FBOpn，128=FBCls |
+| 28 | SamePosDelay | time | 0.8s | 允许执行器在同一位置的延时（防两位反馈抖动误判） |
+| 29-33 | LcbOpn/LcbCls/LcbRem/LcbLoc/LcbMaint | bool | false/true/… | 就地开脉冲/关命令/切POC/切Loc或Tst/维护 |
+| 34 | LcbType | dint | 0 | 同 MOT1 五种型式 |
+| 35 | **CutOrd** | bool | false | true=**到位（限位）后输出自动切断**（脉冲式控制，防线圈长带电） |
+| 36-37 | OrdOpn / OrdCls | bool | out | 开/关命令输出（到接触器/电磁阀线圈） |
 
-- EnSim=TRUE：DI_OpenFb/DI_CloseFb 用 Sim_* 值，AI_Pos 用 Sim_Pos，硬件输出屏蔽；
-- **行程仿真**：高级用法——仿真里让 Sim_Pos 按命令方向以参数化速率爬行（如 100%/T_OpenMax），培训时能看到"阀门正在开"的过程，不是瞬跳；
-- Sim_CloseFb 默认 TRUE（上电态=关闭），与"失电关闭"的安全方向一致。
+### 2.4 联锁/预告/模式/报警（同 MOT1 结构）
 
-## 9. 面板 FP_Valve（详见 05 文档）
-
-- 开关阀：开/关/中停三态符号（三重编码）+ 开/关/停按钮 + 到位指示灯；
-- 调节阀：**阀位竖条+百分比** + 目标阀位给定滑块 + 偏差指示 + 模式标签（MAN/AUTO/CASCADE）；
-- 公共区：故障信息+SigTag 超链接、参数区（超时/死区/脉冲宽）、所属组+StepNo+跳转、仿真指示。
-
-## 10. 调试检查项
-
-| # | 检查项 | 通过判据 |
+| # | 参数 | 说明 |
 |---|---|---|
-| C1 | 开 IO | 点开，DO_Open 亮、开到位反馈翻 |
-| C2 | 关 IO | 点关，DO_Close 亮、关到位反馈翻 |
-| C3 | 互锁 | 任何操作下 DO_Open/DO_Close 不同时亮（看趋势） |
-| C4 | 开超时 | T_OpenMax 设 2s 不给反馈，A1 出现 |
-| C5 | 关超时 | T_CloseMax 设 2s，A2 出现 |
-| C6 | 限位故障 | 同时给两个到位反馈，A6 出现 |
-| C7 | 中停 | EnMid=TRUE，运动中 Cmd_Stop，双输出断 |
-| C8 | 调节阀闭环 | 给 Cmd_Pos=60，AI_Pos 稳定到 60±DeadBand |
-| C9 | 偏差报警 | T_DevMax 设 5s，卡住阀位，A7 出现 |
-| C10 | 联锁与本地 | 同 02 文档 C5~C10 |
+| 38-40 | PrevDrive/PrevDriveTxt/IATxt | 前序设备联锁+描述/IA 描述 |
+| 41-43 | IB1Txt/IB2Txt/ICTxt | VLV1 为 2 个过程联锁（IB1/IB2）+IC |
+| 44-45 | OpnTxt/ClsTxt | 开/关文本（如 forward/open/up、reverse/close/down） |
+| 46-47 | StwCen/StwField | 启动预告触发条件 |
+| 48-54 | AutoMode/EnAuto/EnSeq/EnCen/EnLoc/EnMaint/EnFPLClsInAllModes | 同 MOT1（54：false=常闭阀只能中控关） |
+| 55-60 | ExtendedInfo/Class/AlarmTr/InterlockTr/ModeTr/StatusTr | 同 MOT1 |
+| 61-66 | IOStatTxt/IOStat4Txt/METxt/M1Txt/LcbClsTxt/**OpnClsErrTxt** | **OpnClsErrTxt=开和关位反馈同时出现的错误文本** |
+| 67-70 | GrpOpnOverride/GrpClsOverride/GrpTripOverride/GrpRFSOverride | 同 MOT1 |
+| 71 | AlarmAck | 报警确认脉冲 |
 
-## 11. 与现有 VALVE1/PVALVE 的差异
+## 3. VLV1Data 与联锁语义【核实-04手册p199-203】
 
-| 项 | VALVE1/PVALVE | VALVE_C |
+- 四组件同 MOT1：In / Out / PCC / ProcessPanel；每阀一个全局变量；
+- In 侧联锁：IC（全模式生效）/ IB1-2（本地释放）/ IA（不计 RFS）/ PrevDrive（PD，组保持 RFS）；
+- **V1 自拟的"双命令互锁"官方解法**：OneCoil/CutOrd/FBErrorMode 三件套——双线圈阀 OneCoil=false 且 FBErrorMode=0 时 Trip 活跃期禁发关命令；CutOrd=true 到位自断输出； SamePosDelay 防抖；
+- **V1 自拟的"行程超时"官方解法**：FBTime（FBOpn/Cls 响应最大延时）+ FB On/Trip/Off/Frc 四后缀报警（同 MOT1 机制）；
+- **V1 自拟的"阀位偏差"官方解法**：Actuator/MOTP 的 Position Deviation Alarm（VLV1 无此功能——两位阀不需要）。
+
+## 4. VLVNO1 与 Actuator 要点【核实-04手册p215/233】
+
+- **VLVNO1**：常开阀。参数结构与 VLV1 相同（反馈/联锁/线圈逻辑镜像），操作累计方向相反（Open→Close 计一次）；
+- **Actuator**：AO+位置测量；2 个位置反馈（同时=故障）；**位置反馈开/关仿真（可配位置限值）**——无位置反馈的调节阀也能调试；方向性 IC + 1 个 IB + 方向性 IA；**执行器速度监视+低速报警**（阀卡涩早期发现）；**位置偏差报警**（命令阀位 vs 实际阀位）；应用示例：调节阀闭环控制（04手册p262）。
+
+## 5. Faceplate 与报警【核实-04手册p204-213】
+
+- 按钮：Open / Close / Acknowledge / 切 POC（Seq/Cen/Loc）/ 切模式（Auto/Man）；
+- Default View：Sim / Block / Tag+描述 / 阀状态（开/关/中间）/ Normal View / 报警指示 / 位置指示；
+- 页签：Interlock / PCC / Alarm / Trend / Group（同 MOT1 结构）；
+- 报警消息结构同 MOT1（[POC]+[MODE]+[STATUS]+[STOP REASON]+Blk:），阀门特有停止原因：OSP/CSP 等开/关来源 + **OpnClsErr（双位反馈故障）**；文本参数：M1/Local Close/OpnClsErr/FBOpn/FBCls。
+
+## 6. CL 落地：VLV_C 映射表【CL 适配】
+
+| CL VLV_C 设计 | 对齐官方 | 说明 |
 |---|---|---|
-| 模式 | 分类型 | 一个块双模式（EnLoop） |
-| 互锁 | 靠工程代码 | 块内三重防护 |
-| 组接口 | 散线 | CC_EqCmd/EqStat |
-| 仿真/调试 | 无 | 内建 |
-| 阀位闭环 | 外接 | 内置位置式（可选外接 PID） |
+| 参数 GrpOpnStep/GrpClsStep/Delay | 同名同义 | 开 1..999 / 关 1001..1999 |
+| In.FBOpn/FBCls+En | 同名同义 | 无限位时 En=false 自动仿真（调试利器） |
+| OneCoil/CutOrd/FBErrorMode | 同名同义 | 替代 V1 自拟互锁三重防护 |
+| FBTime+四后缀 | 同名同义 | 替代 V1 T_OpenMax/T_CloseMax |
+| SamePosDelay | 同名同义 | 两位反馈抖动防护 |
+| OpnClsErrTxt | 同名同义 | 双位反馈矛盾报警 |
+| IC/IB1-2/IA/PD | 同名同义 | 联锁语义同电机 |
+| NC/NO 双模式 | VLV1/VLVNO1 两个官方块 | CL 用参数 EnNormallyOpen 合并（V1 的 EnLoop 思路保留但改官方语义） |
+| 调节阀 | Actuator/MOTP | CL 拆两个变体：VLV_C(两位)+ACT_C(调节)，不合并成一个块 |
 
-## 12. 本篇结论
+**F163 现场迁移**：VALVE1/PVALVE 的管脚语义与 VLV1/Actuator 对齐——VALVE1（两位阀）→VLV1；PVALVE（带阀位）→Actuator。现场现有描述文本直接搬进各 Txt 参数。
 
-VALVE_C = MOTOR_C 的框架 + **双命令互锁 + 阀位闭环**两件特产。记住三个数：**七个状态、两条超时（T_OpenMax/T_CloseMax）、一个死区（DeadBand）**。ST 骨架照抄版在 08 文档 §3（与 MOTOR_C 同构，差异段已标注）。
+## 7. V1→V2 关键差异
+
+| V1 自拟 | V2 官方 |
+|---|---|
+| EnLoop 一个块双模式 | VLV1/VLVNO1（两位）+ Actuator/MOTP（阀位）官方分块 |
+| 双命令互锁软件仲裁 | OneCoil+CutOrd+FBErrorMode 机构级机制 |
+| T_OpenMax/T_CloseMax | FBTime+FB On/Trip/Off/Frc |
+| DeadBand 自拟死区 | Actuator/MOTP 的 Position Deviation Alarm |
+| 无线圈类型概念 | OneCoil 单/双线圈+得电到位或持续带电 |
+| 无限位仿真概念 | FBOpnEn/FBClsEn=false 自动仿真 |
+
+## 8. 本篇结论
+
+阀门族的官方设计比电机多一个"机构层"：**线圈型式（OneCoil）、输出方式（CutOrd）、故障模式（FBErrorMode 位掩码）、限位仿真（FBxEn）**四件事参数化。CL 库 VLV_C 按 §6 映射落地，两位阀和调节阀分开两个块，别学 V1 硬合并。
