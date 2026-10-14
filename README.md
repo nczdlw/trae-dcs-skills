@@ -1,6 +1,6 @@
 # TRAE DCS 技能与配置备份（跨设备恢复包 + 经验知识库）
 
-本仓库是 TRAE（SOLO CN）上沉淀的 DCS 工程方法论备份与经验知识库，用于重装系统、换电脑后恢复，以及日常任务经验积累。
+本仓库是 TRAE（SOLO CN）上沉淀的 DCS 工程方法论备份与经验知识库，用于重装系统、换电脑后恢复，以及日常任务经验积累。同时承载一套可跨领域复用的 AI 工程任务管理方法（complex-task-decompose 解耦版），入口见下方「可复用方法入口」。
 
 ## 跨设备分工（最终版）
 
@@ -16,10 +16,11 @@
 
 | 目录 | 内容 | 恢复到哪里 |
 |------|------|------------|
-| complex-task-decompose/ | 通用方法论 skill（任务树+检索目录+收割+经验入库） | %USERPROFILE%\.trae-cn\skills\ |
+| complex-task-decompose/ | 通用任务拆解方法论 skill（解耦版：通用核心 + references 按需加载） | %USERPROFILE%\.trae-cn\skills\ |
 | interlock-analysis/ | 连锁分析 skill（PDF→FBD管脚连接说明） | %USERPROFILE%\.trae-cn\skills\ |
 | knowledge/ | **经验知识库**：28+条目按8分类，入口 INDEX.md，规范见 00-规范/ | 本仓库内使用 |
 | templates/ | 任务树模板、DCS项目全流程总纲、演示任务树+SVG导图 | 工程根目录 AI任务管理\ |
+| docs/通用方法论迭代/ | 方法论迭代方案交付物：目标范围、平台兼容矩阵、资产地图、耦合点清单、回滚方案、差异说明、阶段3评估记录 | 本仓库内使用 |
 | config-backup/ | 用户规则、跨项目记忆（**仅离线兜底**） | TRAE 设置 / .trae-cn\memory\ |
 
 ## 新电脑恢复步骤（按顺序）
@@ -27,7 +28,7 @@
 1. 安装 TRAE 并登录账号——**云端规则自动生效，无需操作**
 2. 恢复 skill（二选一）：
    - 方式A：TRAE 设置 → 规则和技能 → 技能仓库 → 添加仓库，粘贴 https://github.com/nczdlw/trae-dcs-skills （若你的版本有此入口）
-   - 方式B：`git clone https://github.com/nczdlw/trae-dcs-skills.git` 到任意位置（如 D:\trae-dcs-skills），把 complex-task-decompose 和 interlock-analysis 两个文件夹复制到 `C:\Users\<用户名>\.trae-cn\skills\`
+   - 方式B：`git clone https://github.com/nczdlw/trae-dcs-skills.git` 到任意位置（本机实际位置 `D:\.AI\GITHUB\trae-dcs-skills`），把 complex-task-decompose 和 interlock-analysis 两个文件夹复制到 `C:\Users\<用户名>\.trae-cn\skills\`
 3. 模板：把 templates\ 下文件复制到工程根目录 `AI任务管理\`
 4. 记忆：若 TRAE 记忆未云同步，把 config-backup\user_profile.md 内容并入 `.trae-cn\memory\user_profile.md`
 5. 兜底：若云端规则不可用，把 config-backup\rule-*.md 内容逐条粘贴到 TRAE 用户规则
@@ -56,9 +57,19 @@
 4. **Git 仓库表列（固定，顺序不可改）**：`仓库 | 分支 | 最近提交 | 工作区`（工作区取值：干净 / 有改动(k项)）。
 5. **扫描范围**：递归扫描工作区内所有含 `.git` 的目录作为仓库；递归扫描 `AI任务管理\` 下所有 `任务树.md` 作为活跃任务。
 
+## 可复用方法入口（2026-10-14 解耦版）
+
+- **通用核心** `complex-task-decompose/SKILL.md`：触发判断、任务状态记录、恢复步骤、完成核对；不含机器路径、领域规则、平台安装步骤——换领域只换扩展，不改核心。
+- **按需扩展** `complex-task-decompose/references/`：
+  - `svg-mindmap.md`：SVG 导图格式规范（可选能力，启用时才读）；
+  - `platform-adapters.md`：TRAE / WorkBuddy 安装位置、发现方式、副本刷新纪律；
+  - `dcs-extension.md`：DCS 领域扩展（知识库检索与入库、项目总纲衔接）。
+- **迭代交付物** `docs/通用方法论迭代/`：01 目标与范围、02 平台兼容矩阵（**平台状态唯一记录**：截至 2026-10-14 安装已验证、触发未验证）、03 资产地图、04 耦合点清单、05 回滚方案、06 差异与回滚说明、07 阶段3评估记录。
+- 未实测平台不得声称支持；平台能力变化时以 02 矩阵为准更新。
+
 ## 维护约定
 
-- **skill 更新**：只改本仓库里的文件 → 提交推送 → 再复制到 `%USERPROFILE%\.trae-cn\skills\` 和各工作区 `.trae\skills\`
+- **skill 更新**：只改本仓库里的文件 → 提交推送 → 再复制到 `%USERPROFILE%\.trae-cn\skills\` 和各工作区 `.trae\skills\`；副本刷新纪律（仓库→副本单向、刷新后核对一致）见 `complex-task-decompose\references\platform-adapters.md` 第二节
 - **规则更新**：改 TRAE 云端规则为准 → 同步更新本仓库 config-backup\rule-*.md
 - **知识库更新**：任务完成后直接在本仓库 knowledge\ 增条目、更新 INDEX，提交推送
 - 本仓库是 skill、模板与知识库的唯一源头（single source of truth），改动方向永远是 仓库 → 副本
