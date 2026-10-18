@@ -1,0 +1,13 @@
+# cadgen MCP 握手验证  2026-10-18
+启动命令: C:\Users\nczdl\.local\bin\uvx.exe --no-config --managed-python --python 3.13 --from cadgen==0.7.21 cadgen mcp
+cwd: C:\
+initialize -> 8.9s: {"jsonrpc": "2.0", "id": 1, "result": {"protocolVersion": "2024-11-05", "capabilities": {"tools": {"listChanged": false}, "resources": {"listChanged": false}}, "serverInfo": {"name": "cad", "title": "CAD", "version": "0.7.21", "icons": [{"src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0wLjg2IC0xLjIgNS41NiA1LjU2IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0wIDBIM1YxLjVIMS41VjIuNUgzVjRIMFoiLz48cGF0aCBvcGFjaXR5PSIuNTUiIGQ9Ik0wIDBMLjg0LS44NEgzLjg0TDMgMFpNMS41IDIuNUwyLjM0IDEuNjZIMy44NEwzIDIuNVoiLz48cGF0aCBvcGFjaXR5PSIuMyIgZD0iTTMgMEwzLjg0LS44NFYuNjZMMyAxLjVaTTMgMi41TDMuODQgMS42NlYzLjE2TDMgNFpNMS41IDEuNUwyLjM0LjY2VjEuNjZMMS41IDIuNVoiLz48L3N2Zz4=", "mimeType": "image/svg+xml", "sizes": ["any"]}]}, "instructions": "CAD opens local CAD models (STEP, 
+serverInfo = {"name": "cad", "title": "CAD", "version": "0.7.21", "icons": [{"src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0wLjg2IC0xLjIgNS41NiA1LjU2IiBmaWxsPSJjdXJyZW50Q29sb3IiPjxwYXRoIGQ9Ik0wIDBIM1YxLjVIMS41VjIuNUgzVjRIMFoiLz48cGF0aCBvcGFjaXR5PSIuNTUiIGQ9Ik0wIDBMLjg0LS44NEgzLjg0TDMgMFpNMS41IDIuNUwyLjM0IDEuNjZIMy44NEwzIDIuNVoiLz48cGF0aCBvcGFjaXR5PSIuMyIgZD0iTTMgMEwzLjg0LS44NFYuNjZMMyAxLjVaTTMgMi41TDMuODQgMS42NlYzLjE2TDMgNFpNMS41IDEuNUwyLjM0LjY2VjEuNjZMMS41IDIuNVoiLz48L3N2Zz4=", "mimeType": "image/svg+xml", "sizes": ["any"]}]}
+protocolVersion = 2024-11-05
+tools/list -> 2 个工具
+  - cad_show: Get a link that opens a local CAD model (STEP, STL, GLB, 3MF, DXF, URDF, SDF) in the CAD V
+  - cad_telemetry: Report whether cadgen sends usage stats (counts of tool calls, view activity, files shown,
+--- stderr(前2000字) ---
+cadgen mcp: client wb-verify 1.0: text views (extensions: none)
+
+握手结论: OK

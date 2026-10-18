@@ -1,0 +1,120 @@
+# cadgen 安装记录  2026-10-18
+# uv=C:\Users\nczdl\.local\bin\uv.exe 存在:True  uvx=C:\Users\nczdl\.local\bin\uvx.exe 存在:True
+
+== [1] uv python list（本地已有 python 快查） ==
+rc=0 44.1s
+cpython-3.15.0b1-windows-x86_64-none                 <download available>
+cpython-3.15.0b1+freethreaded-windows-x86_64-none    <download available>
+cpython-3.14.5-windows-x86_64-none                   <download available>
+cpython-3.14.5+freethreaded-windows-x86_64-none      <download available>
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Python\pythoncore-3.14-64\python.exe
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Python\bin\python3.exe
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Python\bin\python3.14.exe
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Python\bin\python.exe
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Microsoft\WindowsApps\python3.exe
+cpython-3.14.4-windows-x86_64-none                   C:\Users\nczdl\AppData\Local\Microsoft\WindowsApps\python.exe
+cpython-3.14.3-windows-x86_64-none                   C:\Python314\python.exe
+cpython-3.14.3-windows-x86_64-none                   C:\ProgramData\chocolatey\bin\python3.14.exe
+cpython-3.13.14-windows-x86_64-none                  C:\Users\nczdl\.workbuddy\binaries\python\versions\3.13.12\python3.exe
+cpython-3.13.14-windows-x86_64-none                  C:\Users\nczdl\.workbuddy\binaries\python\versions\3.13.12\python.exe
+cpython-3.13.13-windows-x86_64-none                  <download available>
+cpython-3.13.13+freethreaded-windows-x86_64-none     <download available>
+cpython-3.12.13-windows-x86_64-none                  <download available>
+cpython-3.12.10-windows-x86_64-none                  C:\Users\nczdl\AppData\Local\Programs\Python\Python312\python.exe
+cpython-3.11.15-windows-x86_64-none                  <download available>
+cpython-3.10.20-windows-x86_64-none                  <download available>
+cpython-3.9.25-windows-x86_64-none                   <download available>
+cpython-3.8.20-windows-x86_64-none                   <download available>
+pypy-3.11.15-windows-x86_64-none                     <download available>
+pypy-3.10.16-windows-x86_64-none                     <download available>
+pypy-3.9.19-windows-x86_64-none                      <download available>
+pypy-3.8.16-windows-x86_64-none                      <download available>
+graalpy-3.12.0-windows-x86_64-none                   <download available>
+graalpy-3.11.0-windows-x86_64-none                   <download available>
+graalpy-3.10.0-windows-x86_64-none                   <download available>
+
+== [2] PyPI cadgen 最新版（best-effort，失败不阻塞） ==
+PyPI 查询失败: URLError(OSError('Tunnel connection failed: 502 Bad Gateway'))
+仓库官方 pin = 0.7.21 -> 采用 0.7.21（与官方 mcp.json 一致）
+
+== [3] uvx ... cadgen --help（首次下载 managed py3.13+cadgen+OCP，可能数分钟） ==
+rc=0 耗时=72.2s
+--- stdout ---
+usage: cadgen <command> [args...]
+
+commands:
+  3mf build      write a 3MF mesh of a STEP document
+  3mf snapshot   render a 3MF mesh to an image
+  daemon         run the warm build daemon
+  daemon status  show the warm daemon's workers
+  doctor         print installed cadgen and verify a skill's pin
+  dxf snapshot   render a DXF to an image
+  glb build      write a GLB mesh of a STEP document
+  glb snapshot   render a GLB mesh to an image
+  mcp            serve CAD to an agent host over MCP (stdio)
+  sdf snapshot   render an SDF to an image
+  sdf validate   validate an SDF world or model
+  snapshot       render any supported input to an image
+  srdf validate  validate an SRDF against its URDF
+  step build     re-emit a STEP as a new one; can add kinematics, materials, animation
+  step compile   make a STEP's tree current
+  step snapshot  render a STEP model to an image
+  stl build      write an STL mesh of a STEP document
+  stl snapshot   render an STL mesh to an image
+  store          the store: info, why <model> (gate verdict), forget <target>, gc
+  telemetry      show or change the usage stats and crash reports CAD sends: status, on, off
+  urdf snapshot  render a URDF to an image
+  urdf validate  validate a URDF robot description
+  viewer         start, or reuse, this machine's CAD Viewer
+  viewer stop    ask the CAD Viewer on a port to exit
+
+Run 'cadgen <command> --help' for a command's own options.
+Each command is also available as 'python -m <module>'.
+--- stderr ---
+Downloading cpython-3.13.13-windows-x86_64-none (download) (20.8MiB)
+ Downloaded cpython-3.13.13-windows-x86_64-none (download)
+Downloading fonttools (2.4MiB)
+Downloading pygments (1.2MiB)
+Downloading shapely (1.7MiB)
+Downloading sympy (6.0MiB)
+Downloading pillow (6.9MiB)
+Downloading scipy (34.9MiB)
+Downloading jedi (4.7MiB)
+Downloading ezdxf (2.9MiB)
+Downloading matplotlib (8.9MiB)
+Downloading cadgen (11.1MiB)
+Downloading cadquery-ocp-novtk (44.2MiB)
+Downloading playwright (36.8MiB)
+Downloading numpy (12.0MiB)
+Downloading scikit-learn (7.9MiB)
+ Downloaded pygments
+ Downloaded shapely
+ Downloaded fonttools
+ Downloaded ezdxf
+ Downloaded sympy
+ Downloaded pillow
+ Downloaded scikit-learn
+ Downloaded matplotlib
+ Downloaded cadgen
+ Downloaded numpy
+ Downloaded jedi
+ Downloaded scipy
+ Downloaded playwright
+ Downloaded cadquery-ocp-novtk
+Installed 58 packages in 11.98s
+
+== [4] uvx ... cadgen doctor ==
+rc=0 耗时=31.9s
+--- stdout ---
+cadgen 0.7.21
+  python   3.13.13 (C:\Users\nczdl\AppData\Local\uv\cache\archive-v0\tAjeJl6q4t8uAGuL\Scripts\python.exe)
+  install  C:\Users\nczdl\AppData\Local\uv\cache\archive-v0\tAjeJl6q4t8uAGuL\Lib\site-packages\cadgen
+  daemon   5cb8a3360c13
+  sharing  on: by default, since cadgen said so on 2026-10-18
+  kernel   OK — OCP at C:\Users\nczdl\AppData\Local\uv\cache\archive-v0\tAjeJl6q4t8uAGuL\Lib\site-packages\OCP\__init__.py
+  pin      none found (no SKILL.md to check)
+--- stderr ---
+Installed 58 packages in 11.22s
+cadgen now sends usage stats and crash reports, tagged with a random ID — never your files, paths or prompts. Turn off: uvx cadgen telemetry off · https://www.texttocad.dev/privacy-policy
+
+== DONE ==

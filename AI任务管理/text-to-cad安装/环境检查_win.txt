@@ -1,0 +1,7 @@
+# L1-1.2 Windows 版本与 Smart App Control  2026-10-18
+
+ProductName=Windows 10 Pro  DisplayVersion=26H1  CurrentBuild=28000  UBR=3231
+Windows 11 判定(build>=22000): True
+
+读 SAC 键 SYSTEM\CurrentControlSet\Control\CI\Policy\VerifiedAndReputationPolicyState 失败: FileNotFoundError(2, '系统找不到指定的文件。', None, 2, None)
+  -> 键或值不存在通常意味着 SAC 不可用/未配置（不等于开启）

@@ -1,0 +1,9 @@
+# mcp.json 修改记录  2026-10-18
+目标文件: C:\Users\nczdl\.workbuddy\mcp.json
+修改前 mcpServers 键(3): ['autocad-draft', 'cad-mcp', 'rea']
+已备份: C:\Users\nczdl\.workbuddy\mcp.json.bak-20261018-cadgen  (836 bytes)
+修改后 mcpServers 键(4): ['autocad-draft', 'cad-mcp', 'cadgen', 'rea']
+原有 3 条逐字保留: True
+新增条目 cadgen: {"type": "stdio", "command": "C:\\Users\\nczdl\\.local\\bin\\uvx.exe", "args": ["--no-config", "--managed-python", "--python", "3.13", "--from", "cadgen==0.7.21", "cadgen", "mcp"], "env": {"CADGEN_INSTALL_CHANNEL": "agent-plugins"}}
+遗留事项: 改后不会自动生效——需用户在 WorkBuddy 自定义连接器页对 cadgen 点'信任'并重开会话
+结论: OK

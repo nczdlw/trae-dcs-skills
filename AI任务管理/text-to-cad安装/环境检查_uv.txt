@@ -1,0 +1,8 @@
+# L1-1.1 uv/uvx 检查  2026-10-18
+
+[uv] 路径: C:\Users\nczdl\.local\bin\uv.exe  存在: True
+  --version -> rc=0  输出: uv 0.11.13 (4512a3931 2026-05-10 x86_64-pc-windows-msvc)
+[uvx] 路径: C:\Users\nczdl\.local\bin\uvx.exe  存在: True
+  --version -> rc=0  输出: uvx 0.11.13 (4512a3931 2026-05-10 x86_64-pc-windows-msvc)
+shutil.which('uv') -> C:\Users\nczdl\.local\bin\uv.EXE
+shutil.which('uvx') -> C:\Users\nczdl\.local\bin\uvx.EXE
