@@ -1,0 +1,30 @@
+# L型支架建模记录  2026-10-18
+
+## 工作流（依据官方 skills/cad/SKILL.md）
+
+- 模型脚本：cad/text-to-cad/src/bracket.py（build123d + @step 装饰器，cadgen 0.7.21）
+- 生成命令：uvx --no-config --managed-python --python 3.13 --from cadgen==0.7.21 python src/bracket.py
+- 快照命令：uvx ... cadgen step snapshot STEP/bracket.step tmp/review.png
+
+## 运行结果
+
+- 退出码 0，耗时 4.75s（daemon 已预热），输出 "STEP saved"
+- 产物：STEP/bracket.step，91229 字节
+- 快照：tmp/review.png，139150 字节（首次自动下载 playwright winldd-1007）
+
+## 几何自检（Read 快照确认）
+
+- L 型轮廓正确：水平底板 + 后端立板
+- 6 个 M5 沉头孔全部在位：立板 2 个 + 底板四角 4 个，锥面轮廓清晰，位置与参数一致
+
+## 设计参数（mm）
+
+| 项 | 值 |
+|---|---|
+| 底板 | 120 x 60 x 6（长x宽x厚） |
+| 立板 | 60 高 x 6 厚，贴底板后端 |
+| 沉头孔 | M5：通孔 Ø5.5，沉头锥面顶径 Ø11，90°锥，锥深 2.75 |
+| 孔位 | 底板四角 + 立板两个，孔心距边 8，立板孔心距底板顶面 30 |
+| 材料假设 | Q235 钢板（未写入模型） |
+
+说明：用户未给尺寸，以上为工程常规默认值，参数集中在 bracket.py 顶部，改后重跑脚本即可。
